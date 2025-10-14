@@ -5,7 +5,7 @@ from pydantic import BaseModel, EmailStr
 
 
 class UserBaseModel(BaseModel):
-    uid: uuid.UUID
+    id: uuid.UUID
 
 
 class UserCreateModel(BaseModel):
@@ -23,3 +23,11 @@ class UserPresentModel(UserBaseModel):
     username: str
     email: str
     created_at: datetime
+
+
+class UserInDB(UserBaseModel):
+    hashed_password: str
+    email: EmailStr
+    created_at: datetime
+    updated_at: datetime
+

@@ -1,0 +1,6 @@
+def get_password_hash(password: str) -> str:
+    ...
+
+
+def verify_password(password, hashed_password) -> bool:
+    ...

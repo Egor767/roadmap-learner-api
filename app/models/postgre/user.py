@@ -1,17 +1,45 @@
-from datetime import datetime
-
-from sqlalchemy import Column, String, DateTime
-from sqlalchemy.dialects.postgresql import UUID
 import uuid
-from app.db.posgre.session import Base
+from sqlalchemy import Column, String, Boolean, DateTime
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.sql import func
+
+from app.db.posgre.base import Base
 
 
-class UserModel(Base):
+class User(Base):
     __tablename__ = "users"
 
-    uid = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    username = Column(String, unique=True, nullable=False)
-    email = Column(String, unique=True, nullable=False)
-    password_hash = Column(String, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    id = Column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        index=True,
+        nullable=False
+    )
+    email = Column(
+        String(255),
+        unique=True,
+        index=True,
+        nullable=False
+    )
+    hashed_password = Column(
+        String(255),
+        nullable=False
+    )
+    username = Column(
+        String(100),
+        nullable=False
+    )
+    created_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now()
+    )
+    updated_at = Column(
+        DateTime(timezone=True),
+        onupdate=func.now(),
+        server_default=func.now()
+    )
+
+    def __repr__(self):
+        return f"<User(id={self.id}, email={self.email})>"
 

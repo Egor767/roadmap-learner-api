@@ -1,15 +1,28 @@
 import uuid
 from abc import ABC, abstractmethod
-from app.schemas.user import UserCreateModel, UserBaseModel
+from typing import Optional, Dict, Any
+
+from app.schemas.user import UserInDB
 
 
 class IUserRepository(ABC):
 
     @abstractmethod
-    async def create_user(self, user_create_model: UserCreateModel) -> UserBaseModel:
+    async def create_user(self, user: UserInDB) -> UserInDB:
         ...
 
     @abstractmethod
-    async def get_user_by_id(self, uid: uuid.UUID) -> UserBaseModel:
+    async def get_user_by_id(self, uid: uuid.UUID) -> Optional[UserInDB]:
         ...
 
+    @abstractmethod
+    async def get_user_by_email(self, email: str) -> Optional[UserInDB]:
+        ...
+
+    @abstractmethod
+    async def update_user(self, uid: uuid.UUID, user_update: Dict[str, Any]) -> Optional[UserInDB]:
+        ...
+
+    @abstractmethod
+    async def delete_user(self, uid: uuid.UUID) -> bool:
+        ...
