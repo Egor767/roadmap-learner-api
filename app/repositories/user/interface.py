@@ -1,6 +1,6 @@
 import uuid
 from abc import ABC, abstractmethod
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 
 from app.schemas.user import UserInDB, UserCreate
 
@@ -16,7 +16,7 @@ class IUserRepository(ABC):
         ...
 
     @abstractmethod
-    async def get_user_by_email(self, email: str) -> Optional[UserInDB]:
+    async def get_users_by_filters(self, filters) -> Optional[List[UserInDB]]:
         ...
 
     @abstractmethod
@@ -30,4 +30,6 @@ class IUserRepository(ABC):
     @abstractmethod
     async def hard_delete_user(self, uid: uuid.UUID) -> bool:
         ...
+
+
 

@@ -1,5 +1,5 @@
 import uuid
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from contextlib import asynccontextmanager
 
 from sqlalchemy import select, insert, update
@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.logging import user_repo_logger
 from app.models.postgre.user import User
 from app.repositories.user.interface import IUserRepository
-from app.schemas.user import UserInDB, UserCreate
+from app.schemas.user import UserInDB, UserCreate, UserFilters
 from app.core.handlers import repository_handler
 
 
@@ -47,16 +47,23 @@ class UserRepository(IUserRepository):
         db_user = result.scalar_one_or_none()
 
         if not db_user:
-            return None
+            return
         return map_to_schema(db_user)
 
-    @repository_handler
-    async def get_user_by_email(self, email: str) -> Optional[UserInDB]:
-        stmt = select(User).where(User.email == email)
-        result = await self.session.execute(stmt)
-        db_user = result.scalar_one_or_none()
+    async def get_users_by_filters(self, filters: UserFilters) -> Optional[List[UserInDB]]:
+        stmt = select(User)
 
-        return map_to_schema(db_user) if db_user else None
+        if filters.email:
+            stmt = stmt.where(User.email == filters.email)
+        if filters.username:
+            stmt = stmt.where(User.username == filters.username)
+
+        result = await self.session.execute(stmt)
+        users = result.scalars().all()
+
+        if not users:
+            return
+        return [map_to_schema(user) for user in users]
 
     @repository_handler
     async def get_all_users(self) -> list[UserInDB]:

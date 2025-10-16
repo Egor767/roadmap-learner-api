@@ -1,11 +1,11 @@
 import uuid
-from typing import Optional
+from typing import Optional, List
 
 from app.core.handlers import service_handler
 from app.core.logging import user_service_logger as logger
 from app.core.security import get_password_hash, verify_password
 from app.repositories.user.interface import IUserRepository
-from app.schemas.user import UserCreate, UserBase, UserInDB, UserResponse
+from app.schemas.user import UserCreate, UserBase, UserInDB, UserResponse, UserFilters
 
 
 class UserService:
@@ -39,16 +39,19 @@ class UserService:
         logger.info(f"Retrieved user by id: {uid}")
         return UserResponse.model_validate(user)
 
-    @service_handler
-    async def get_user_by_email(self, email: str) -> Optional[UserBase]:
-        user = await self.repo.get_user_by_email(email)
-        if user:
-            return UserBase.model_validate(user)
-        return None
+    async def get_users_by_filters(self, filters: UserFilters) -> List[UserResponse]:
+        users = await self.repo.get_users_by_filters(filters)
+        if not users:
+            logger.warning(f"Users not found with filters: {filters}")
+            raise ValueError("Users not found")
+
+        validated_users = [UserResponse.model_validate(user) for user in users]
+        logger.info(f"Retrieved users with filters: {filters}")
+        return validated_users
 
     @service_handler
     async def auth_user(self, email: str, password: str) -> Optional[UserBase]:
-        user = await self.repo.get_user_by_email(email)
+        user = await self.repo.get_users_by_filters(UserFilters(email=email))[0]
         if not user:
             return None
 

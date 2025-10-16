@@ -38,3 +38,11 @@ class UserInDB(UserBase):
     class Config:
         from_attributes = True
 
+
+class UserFilters(BaseModel):
+    email: Optional[str] = None
+    username: Optional[str] = None
+
+    class Config:
+        extra = "forbid"
+
