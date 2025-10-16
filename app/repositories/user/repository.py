@@ -46,7 +46,9 @@ class UserRepository(IUserRepository):
         result = await self.session.execute(stmt)
         db_user = result.scalar_one_or_none()
 
-        return map_to_schema(db_user) if db_user else None
+        if not db_user:
+            return None
+        return map_to_schema(db_user)
 
     @repository_handler
     async def get_user_by_email(self, email: str) -> Optional[UserInDB]:

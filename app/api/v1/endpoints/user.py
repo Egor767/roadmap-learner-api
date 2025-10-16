@@ -1,11 +1,9 @@
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List
+from fastapi import APIRouter, Depends, status
 
-from app.core.dependencies import get_db_session, get_user_service
+from app.core.dependencies import get_user_service
 from app.core.handlers import router_handler
-from app.schemas.user import UserBase, UserCreate, UserResponse
+from app.schemas.user import UserCreate, UserResponse
 from app.services.user.service import UserService
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -20,4 +18,15 @@ async def create_user(
     user_service: UserService = Depends(get_user_service)
 ):
     return await user_service.create_user(user_data)
+
+
+@router.get("/{user_id}",
+            response_model=UserResponse,
+            status_code=status.HTTP_200_OK)
+@router_handler
+async def get_user_by_id(
+    user_id: uuid.UUID,
+    user_service: UserService = Depends(get_user_service)
+):
+    return await user_service.get_user_by_id(user_id)
 

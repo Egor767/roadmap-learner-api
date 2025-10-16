@@ -30,14 +30,14 @@ class UserService:
         return UserResponse.model_validate(created_user)
 
     @service_handler
-    async def get_user_by_id(self, uid: uuid.UUID) -> UserBase:
+    async def get_user_by_id(self, uid: uuid.UUID) -> UserResponse:
         user = await self.repo.get_user_by_id(uid)
         if not user:
             logger.warning(f"User not found with id: {uid}")
             raise ValueError("User not found")
 
-        logger.debug(f"Retrieved user by id: {uid}")
-        return UserBase.model_validate(user)
+        logger.info(f"Retrieved user by id: {uid}")
+        return UserResponse.model_validate(user)
 
     @service_handler
     async def get_user_by_email(self, email: str) -> Optional[UserBase]:
