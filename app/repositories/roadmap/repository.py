@@ -2,7 +2,7 @@ import uuid
 from contextlib import asynccontextmanager
 from typing import Optional, List
 
-from sqlalchemy import insert
+from sqlalchemy import select, insert, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.postgres.roadmap import RoadMap
@@ -37,7 +37,13 @@ class RoadMapRepository(IRoadMapRepository):
             return map_to_schema(db_roadmap)
 
     async def get_user_roadmaps(self, user_id: uuid.UUID) -> Optional[List[RoadMapInDB]]:
-        ...
+        stmt = select(RoadMap).where(RoadMap.user_id == user_id)
+        result = await self.session.execute(stmt)
+        db_roadmaps = result.scalars().all()
+
+        if not db_roadmaps:
+            return
+        return [map_to_schema(roadmap) for roadmap in db_roadmaps]
 
     async def get_user_roadmap(self, user_id: uuid.UUID, roadmap_id: uuid.UUID) -> RoadMapInDB:
         ...

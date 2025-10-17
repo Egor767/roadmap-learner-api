@@ -21,7 +21,14 @@ class RoadMapService:
         return RoadMapResponse.model_validate(created_roadmap)
 
     async def get_user_roadmaps(self, user_id: uuid.UUID) -> List[RoadMapResponse]:
-        ...
+        roadmaps = await self.repo.get_user_roadmaps(user_id)
+        if not roadmaps:
+            logger.warning(f"This user has no roadmaps")
+            raise ValueError("This user has no roadmaps")
+
+        validated_roadmaps = [RoadMapResponse.model_validate(roadmap) for roadmap in roadmaps]
+        logger.info(f"Successful get all user roadmaps")
+        return validated_roadmaps
 
     async def get_user_roadmap(self, user_id: uuid.UUID, roadmap_id: uuid.UUID) -> RoadMapResponse:
         ...

@@ -11,6 +11,17 @@ from app.services.roadmap.service import RoadMapService
 router = APIRouter(prefix="/roadmaps", tags=["roadmaps"])
 
 
+@router.get("/{user_id}",
+            response_model=List[RoadMapResponse],
+            status_code=status.HTTP_200_OK)
+@router_handler
+async def get_user_roadmaps(
+    user_id: uuid.UUID,
+    roadmap_service: RoadMapCreate = Depends(get_roadmap_service)
+):
+    return await roadmap_service.get_user_roadmaps(user_id)
+
+
 @router.post("/create",
              response_model=RoadMapResponse,
              status_code=status.HTTP_201_CREATED)
