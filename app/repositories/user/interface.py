@@ -1,17 +1,13 @@
 import uuid
 from abc import ABC, abstractmethod
-from typing import Optional, Dict, Any, List
+from typing import Optional, List
 
-from app.schemas.user import UserInDB, UserCreate
+from app.schemas.user import UserInDB, UserFilters
 
 
 class IUserRepository(ABC):
-
     @abstractmethod
-    async def create_user(self, user: UserCreate) -> UserInDB:
-        ...
-
-    async def get_all_users(self) -> Optional[List[UserInDB]]:
+    async def get_all_users(self) -> List[UserInDB]:
         pass
 
     @abstractmethod
@@ -19,7 +15,11 @@ class IUserRepository(ABC):
         ...
 
     @abstractmethod
-    async def get_users_by_filters(self, filters) -> Optional[List[UserInDB]]:
+    async def get_users_by_filters(self, filters: UserFilters) -> List[UserInDB]:
+        ...
+
+    @abstractmethod
+    async def create_user(self, user_data: dict) -> UserInDB:
         ...
 
     @abstractmethod
@@ -27,6 +27,6 @@ class IUserRepository(ABC):
         ...
 
     @abstractmethod
-    async def update_user(self, uid: uuid.UUID, user_update: Dict[str, Any]) -> Optional[UserInDB]:
+    async def update_user(self, uid: uuid.UUID, user_data: dict) -> Optional[UserInDB]:
         ...
 

@@ -1,14 +1,14 @@
 import uuid
-from typing import Optional, Dict, Any, List
+from typing import List, Optional
 from contextlib import asynccontextmanager
 
 from sqlalchemy import select, insert, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.logging import user_repo_logger
+from app.core.logging import user_repo_logger as logger
 from app.models.postgres.user import User
 from app.repositories.user.interface import IUserRepository
-from app.schemas.user import UserInDB, UserCreate, UserFilters
+from app.schemas.user import UserInDB, UserFilters
 from app.core.handlers import repository_handler
 
 
@@ -30,24 +30,10 @@ class UserRepository(IUserRepository):
             raise
 
     @repository_handler
-    async def create_user(self, user: UserCreate) -> UserInDB:
-        async with self._transaction():
-            user_data = user.model_dump(exclude={'password'})
-            user_data['hashed_password'] = user.password
-            stmt = insert(User).values(**user_data).returning(User)
-            result = await self.session.execute(stmt)
-            db_user = result.scalar_one()
-
-            return map_to_schema(db_user)
-
-    @repository_handler
-    async def get_all_users(self) -> Optional[List[UserInDB]]:
+    async def get_all_users(self) -> List[UserInDB]:
         stmt = select(User)
         result = await self.session.execute(stmt)
         users = result.scalars().all()
-
-        if not users:
-            return
         return [map_to_schema(user) for user in users]
 
     @repository_handler
@@ -55,12 +41,10 @@ class UserRepository(IUserRepository):
         stmt = select(User).where(User.user_id == uid)
         result = await self.session.execute(stmt)
         db_user = result.scalar_one_or_none()
+        return map_to_schema(db_user) if db_user else None
 
-        if not db_user:
-            return
-        return map_to_schema(db_user)
-
-    async def get_users_by_filters(self, filters: UserFilters) -> Optional[List[UserInDB]]:
+    @repository_handler
+    async def get_users_by_filters(self, filters: UserFilters) -> List[UserInDB]:
         stmt = select(User)
 
         if filters.email:
@@ -70,44 +54,32 @@ class UserRepository(IUserRepository):
 
         result = await self.session.execute(stmt)
         users = result.scalars().all()
-
-        if not users:
-            return
         return [map_to_schema(user) for user in users]
 
     @repository_handler
-    async def update_user(self, uid: uuid.UUID, user_update: Dict[str, Any]) -> Optional[UserInDB]:
+    async def create_user(self, user_data: dict) -> UserInDB:
         async with self._transaction():
-            stmt = (
-                update(User)
-                .where(User.user_id == uid)
-                .values(**user_update)
-                .returning(User)
-            )
+            stmt = insert(User).values(**user_data).returning(User)
             result = await self.session.execute(stmt)
-            db_user = result.scalar_one_or_none()
-
-            return map_to_schema(db_user) if db_user else None
+            db_user = result.scalar_one()
+            return map_to_schema(db_user)
 
     @repository_handler
     async def delete_user(self, uid: uuid.UUID) -> bool:
         async with self._transaction():
-            stmt = (
-                delete(User)
-                .where(User.user_id == uid)
-            )
+            stmt = delete(User).where(User.user_id == uid)
             result = await self.session.execute(stmt)
-
             return result.rowcount > 0
 
     @repository_handler
-    async def hard_delete_user(self, uid: uuid.UUID) -> bool:
+    async def update_user(self, uid: uuid.UUID, user_data: dict) -> Optional[UserInDB]:
         async with self._transaction():
             stmt = (
                 update(User)
                 .where(User.user_id == uid)
+                .values(**user_data)
+                .returning(User)
             )
             result = await self.session.execute(stmt)
-
-            return result.rowcount > 0
-
+            db_user = result.scalar_one_or_none()
+            return map_to_schema(db_user) if db_user else None

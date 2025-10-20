@@ -1,11 +1,12 @@
-from pydantic import BaseModel, EmailStr
+from enum import Enum
+
+from pydantic import BaseModel
 import uuid
 from datetime import datetime
 from typing import Optional
 
 
 class RoadMapCreate(BaseModel):
-    user_id: uuid.UUID
     title: str
     description: Optional[str] = None
 
@@ -31,3 +32,16 @@ class RoadMapInDB(BaseModel):
 
 class RoadMapResponse(RoadMapInDB):
     pass
+
+
+class RoadMapStatus(str, Enum):
+    DRAFT = "draft"
+    ACTIVE = "active"
+    ARCHIVED = "archived"
+
+
+class RoadMapFilters(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    status: Optional[RoadMapStatus] = None
+
