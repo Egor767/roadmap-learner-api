@@ -12,18 +12,6 @@ class RoadMapService:
         self.repo = repo
 
     @service_handler
-    async def create_roadmap(self, user_id: uuid.UUID, roadmap_create_data: RoadMapCreate) -> RoadMapResponse:
-        roadmap_data = roadmap_create_data.model_dump()
-        roadmap_data["user_id"] = user_id
-        roadmap_data["road_id"] = uuid.uuid4()
-
-        logger.info(f"Creating new roadmap: {roadmap_create_data.title} for user: {user_id}")
-        created_roadmap = await self.repo.create_roadmap(roadmap_data)
-
-        logger.info(f"Roadmap created successfully: {created_roadmap.road_id}")
-        return RoadMapResponse.model_validate(created_roadmap)
-
-    @service_handler
     async def get_all_roadmaps(self) -> List[RoadMapResponse]:
         roadmaps = await self.repo.get_all_roadmaps()
         validated_roadmaps = [RoadMapResponse.model_validate(roadmap) for roadmap in roadmaps]
@@ -52,6 +40,18 @@ class RoadMapService:
         validated_roadmaps = [RoadMapResponse.model_validate(roadmap) for roadmap in roadmaps]
         logger.info(f"Retrieved {len(validated_roadmaps)} roadmaps with filters: {filters}")
         return validated_roadmaps
+
+    @service_handler
+    async def create_roadmap(self, user_id: uuid.UUID, roadmap_create_data: RoadMapCreate) -> RoadMapResponse:
+        roadmap_data = roadmap_create_data.model_dump()
+        roadmap_data["user_id"] = user_id
+        roadmap_data["road_id"] = uuid.uuid4()
+
+        logger.info(f"Creating new roadmap: {roadmap_create_data.title} for user: {user_id}")
+        created_roadmap = await self.repo.create_roadmap(roadmap_data)
+
+        logger.info(f"Roadmap created successfully: {created_roadmap.road_id}")
+        return RoadMapResponse.model_validate(created_roadmap)
 
     @service_handler
     async def delete_roadmap(self, user_id: uuid.UUID, roadmap_id: uuid.UUID) -> bool:
