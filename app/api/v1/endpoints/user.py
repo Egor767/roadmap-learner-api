@@ -60,10 +60,11 @@ async def create_user(
                status_code=status.HTTP_204_NO_CONTENT)
 @router_handler
 async def delete_user(
+    current_user_id: uuid.UUID,  # Depends(get_current_user)
     user_id: uuid.UUID,
     user_service: UserService = Depends(get_user_service)
 ):
-    await user_service.delete_user(user_id)
+    await user_service.delete_user(current_user_id, user_id)
     return {"id": str(user_id), "status": "deleted"}
 
 
@@ -77,5 +78,5 @@ async def update_user(
     user_data: UserUpdate,
     user_service: UserService = Depends(get_user_service)
 ):
-    return await user_service.update_user(user_id, user_data)
+    return await user_service.update_user(current_user_id, user_id, user_data)
 

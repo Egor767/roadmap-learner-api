@@ -26,7 +26,7 @@ async def get_all_blocks(
 @router_handler
 async def get_roadmap_block(
     user_id: uuid.UUID,  # = Depends(get_current_user)
-    roadmap_id: uuid.UUID,  # из пути
+    roadmap_id: uuid.UUID,  # query param
     block_id: uuid.UUID,
     block_service: BlockService = Depends(get_block_service)
 ):
@@ -38,7 +38,7 @@ async def get_roadmap_block(
 async def get_roadmap_blocks(
     user_id: uuid.UUID,  # = Depends(get_current_user)
     roadmap_id: uuid.UUID,  # query param
-    filters: BlockFilters = Depends(),  # query params
+    filters: BlockFilters = Depends(),
     block_service: BlockService = Depends(get_block_service)
 ):
     return await block_service.get_roadmap_blocks(user_id, roadmap_id, filters)
@@ -49,8 +49,8 @@ async def get_roadmap_blocks(
 @router_handler
 async def create_block(
     user_id: uuid.UUID,  # = Depends(get_current_user)
-    roadmap_id: uuid.UUID,  # из пути
-    block_data: BlockCreate,  # БЕЗ road_id!
+    roadmap_id: uuid.UUID,  # query param
+    block_data: BlockCreate,
     block_service: BlockService = Depends(get_block_service)
 ):
     return await block_service.create_block(user_id, roadmap_id, block_data)
@@ -61,7 +61,7 @@ async def create_block(
 @router_handler
 async def delete_block(
     user_id: uuid.UUID,  # = Depends(get_current_user)
-    road_id: uuid.UUID,  # из пути
+    road_id: uuid.UUID,  # query param
     block_id: uuid.UUID,
     block_service: BlockService = Depends(get_block_service)
 ):
@@ -73,7 +73,7 @@ async def delete_block(
 @router_handler
 async def update_block(
     user_id: uuid.UUID,  # = Depends(get_current_user)
-    roadmap_id: uuid.UUID,  # из пути
+    roadmap_id: uuid.UUID,  # query param
     block_id: uuid.UUID,
     block_data: BlockUpdate,
     block_service: BlockService = Depends(get_block_service)

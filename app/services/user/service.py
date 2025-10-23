@@ -20,12 +20,12 @@ class UserService:
         return validated_users
 
     @service_handler
-    async def get_user_by_id(self, uid: uuid.UUID) -> UserResponse:
-        user = await self.repo.get_user_by_id(uid)
+    async def get_user_by_id(self, user_id: uuid.UUID) -> UserResponse:
+        user = await self.repo.get_user_by_id(user_id)
         if not user:
-            logger.warning(f"User not found with id: {uid}")
+            logger.warning(f"User not found with id: {user_id}")
             raise ValueError("User not found")
-        logger.info(f"Retrieved user by id: {uid}")
+        logger.info(f"Retrieved user by id: {user_id}")
         return UserResponse.model_validate(user)
 
     @service_handler
@@ -56,16 +56,23 @@ class UserService:
         return UserResponse.model_validate(created_user)
 
     @service_handler
-    async def delete_user(self, uid: uuid.UUID) -> bool:
-        success = await self.repo.delete_user(uid)
+    async def delete_user(self, current_user_id: uuid.UUID, user_id: uuid.UUID) -> bool:
+        # check roots
+
+        success = await self.repo.delete_user(user_id)
         if success:
-            logger.info(f"User deleted successfully: {uid}")
+            logger.info(f"User deleted successfully: {user_id}")
         else:
-            logger.warning(f"User not found for deletion: {uid}")
+            logger.warning(f"User not found for deletion: {user_id}")
         return success
 
     @service_handler
-    async def update_user(self, user_id: uuid.UUID, user_update_model: UserUpdate) -> UserResponse:
+    async def update_user(self, current_user_id: uuid.UUID,
+                          user_id: uuid.UUID,
+                          user_update_model: UserUpdate
+                          ) -> UserResponse:
+        # check roots
+
         user_data = user_update_model.model_dump(exclude_unset=True)
 
         if 'password' in user_data:
