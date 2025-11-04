@@ -4,7 +4,7 @@ from typing import List
 
 from app.schemas.card import CardResponse, CardStatus
 from app.schemas.session_manager import SessionInDB, SessionResponse, SessionFilters, SessionCreate, SessionUpdate, \
-    SessionResult
+    SessionResult, SubmitAnswerRequest
 
 
 class ISessionManagerRepository(ABC):
@@ -28,8 +28,8 @@ class ISessionManagerRepository(ABC):
     async def abandon_session(self, user_id: uuid.UUID, session_id: uuid.UUID) -> bool: ...
 
     @abstractmethod
-    async def get_next_card(self, user_id: uuid.UUID, session_id: uuid.UUID, limit: int) -> CardResponse: ...
+    async def get_next_card(self, user_id: uuid.UUID, session_id: uuid.UUID) -> CardResponse: ...
 
     @abstractmethod
-    async def submit_answer(self, user_id: uuid.UUID, session_id: uuid.UUID, card_id: uuid.UUID, answer: CardStatus) -> SessionResponse: ...
+    async def submit_answer(self, user_id: uuid.UUID, session_id: uuid.UUID, answer_data: SubmitAnswerRequest) -> SessionResponse: ...
 

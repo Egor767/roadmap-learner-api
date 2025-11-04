@@ -1,16 +1,17 @@
 import uuid
 from contextlib import asynccontextmanager
-from typing import List
+from typing import List, Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, insert, update, delete
+from sqlalchemy import select, insert, update, delete, func
 
 from app.core.logging import session_manager_repository_logger as logger
 from app.core.handlers import repository_handler
 from app.models.postgres.session_manager import Session
 from app.repositories.session_manager.interface import ISessionManagerRepository
 from app.schemas.card import CardStatus, CardInDB
-from app.schemas.session_manager import SessionInDB, SessionCreate, SessionFilters, SessionResult
+from app.schemas.session_manager import SessionInDB, SessionCreate, SessionFilters, SessionResult, SessionStatus, \
+    SubmitAnswerRequest
 
 
 def map_to_schema(db_session: Session) -> SessionInDB:
@@ -74,18 +75,75 @@ class SessionManagerRepository(ISessionManagerRepository):
             return map_to_schema(db_session)
 
     @repository_handler
-    async def finish_session(self, user_id: uuid.UUID, session_id: uuid.UUID) -> SessionResult:
-        ...
+    async def finish_session(self, user_id: uuid.UUID, session_id: uuid.UUID) -> SessionInDB:
+        async with self._transaction():
+            stmt = (
+                update(Session)
+                .where(
+                    Session.session_id == session_id,
+                    Session.user_id == user_id,
+                    Session.status == SessionStatus.ACTIVE
+                )
+                .values(
+                    status=SessionStatus.COMPLETED,
+                    completed_at=func.now()
+                )
+                .returning(Session)
+            )
+            result = await self.session.execute(stmt)
+            db_session = result.scalar_one_or_none()
+            return map_to_schema(db_session) if db_session else None
 
     @repository_handler
     async def abandon_session(self, user_id: uuid.UUID, session_id: uuid.UUID) -> bool:
         ...
 
     @repository_handler
-    async def get_next_card(self, user_id: uuid.UUID, session_id: uuid.UUID, limit: int) -> CardInDB:
-        ...
+    async def get_next_card(self, user_id: uuid.UUID, session_id: uuid.UUID) -> Optional[CardInDB]:
+        stmt = select(Session).where(
+            Session.session_id == session_id,
+            Session.user_id == user_id
+        )
+        result = await self.session.execute(stmt)
+        db_session = result.scalar_one_or_none()
+
+        if (not db_session.card_queue or
+                db_session.current_card_index >= len(db_session.card_queue)):
+            return
+
+        next_card_id = db_session.card_queue[db_session.current_card_index]
 
     @repository_handler
-    async def submit_answer(self, user_id: uuid.UUID, session_id: uuid.UUID, card_id: uuid.UUID, answer: CardStatus) -> SessionInDB:
-        ...
+    async def submit_answer(self, user_id: uuid.UUID, session_id: uuid.UUID, answer_data: SubmitAnswerRequest) -> SessionInDB:
+        async with self._transaction():
+            stmt = select(Session).where(
+                Session.session_id == session_id,
+                Session.user_id == user_id
+            )
+            result = await self.session.execute(stmt)
+            db_session = result.scalar_one_or_none()
 
+            update_data = {}
+
+            if answer_data.answer == CardStatus.KNOWN:
+                update_data["correct_answers"] = db_session.correct_answers + 1
+            elif answer_data.answer == CardStatus.UNKNOWN:
+                update_data["incorrect_answers"] = db_session.incorrect_answers + 1
+            elif answer_data.answer == CardStatus.REVIEW:
+                update_data["review_answers"] = db_session.review_answers + 1
+
+            update_data["current_card_index"] = db_session.current_card_index + 1
+
+            stmt = (
+                update(Session)
+                .where(
+                    Session.session_id == session_id,
+                    Session.user_id == user_id
+                )
+                .values(**update_data)
+                .returning(Session)
+            )
+
+            result = await self.session.execute(stmt)
+            updated_db_session = result.scalar_one()
+            return map_to_schema(updated_db_session) if updated_db_session else None

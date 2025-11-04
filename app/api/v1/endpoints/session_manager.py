@@ -1,12 +1,14 @@
 import uuid
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends
 from starlette import status
 
 from app.core.dependencies import get_session_manager_service
 from app.core.handlers import router_handler
-from app.schemas.session_manager import SessionResponse, SessionFilters, SessionCreate
+from app.schemas.card import CardResponse
+from app.schemas.session_manager import SessionResponse, SessionFilters, SessionCreate, SessionResult, \
+    SubmitAnswerRequest
 from app.services.session_manager.service import SessionManagerService
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
@@ -40,6 +42,16 @@ async def get_user_sessions(
     return await session_manager_service.get_user_sessions(user_id, filters)
 
 
+@router.get("/{session_id}/next-card", response_model=CardResponse)
+@router_handler
+async def get_next_card(
+    user_id: uuid.UUID,
+    session_id: uuid.UUID,
+    session_manager_service: SessionManagerService = Depends(get_session_manager_service)
+):
+    return await session_manager_service.get_next_card(user_id, session_id)
+
+
 # -------------------------------------- CREATE --------------------------------------
 @router.post("/", response_model=SessionResponse, status_code=201)
 @router_handler
@@ -49,4 +61,32 @@ async def create_session(
     session_manager_service: SessionManagerService = Depends(get_session_manager_service)
 ):
     return await session_manager_service.create_session(user_id, session_create_data)
+
+
+# -------------------------------------- UPDATE --------------------------------------
+# finish session
+@router.patch("/{session_id}/finish", response_model=SessionResult)
+@router_handler
+async def finish_session(
+    user_id: uuid.UUID,  # = Depends(get_current_user)
+    session_id: uuid.UUID,
+    session_manager_service: SessionManagerService = Depends(get_session_manager_service)
+):
+    return await session_manager_service.finish_session(user_id, session_id)
+
+
+# submit answer
+@router.patch("/{session_id}/answer", response_model=SessionResponse)
+@router_handler
+async def submit_answer(
+    user_id: uuid.UUID,
+    session_id: uuid.UUID,
+    answer_data: SubmitAnswerRequest,
+    session_manager_service: SessionManagerService = Depends(get_session_manager_service)
+):
+    return await session_manager_service.submit_answer(
+        user_id,
+        session_id,
+        answer_data
+    )
 

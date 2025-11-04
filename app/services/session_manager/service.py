@@ -5,7 +5,18 @@ from app.core.handlers import service_handler
 from app.core.logging import session_manager_service_logger as logger
 from app.repositories.session_manager.interface import ISessionManagerRepository
 from app.schemas.card import CardResponse, CardStatus
-from app.schemas.session_manager import SessionResponse, SessionUpdate, SessionCreate, SessionFilters, SessionResult
+from app.schemas.session_manager import SessionResponse, SessionUpdate, SessionCreate, SessionFilters, SessionResult, \
+    SessionInDB, SubmitAnswerRequest
+
+
+def calculate_session_stats(session: SessionInDB) -> dict:
+    total_answers = session.correct_answers + session.incorrect_answers + session.review_answers
+    accuracy_percentage = (session.correct_answers / total_answers * 100) if total_answers > 0 else 0.0
+
+    return {
+        'total_cards': len(session.card_queue) if session.card_queue else 0,
+        'accuracy_percentage': round(accuracy_percentage, 2)
+    }
 
 
 class SessionManagerService:
@@ -53,18 +64,50 @@ class SessionManagerService:
 
     @service_handler
     async def finish_session(self, user_id: uuid.UUID, session_id: uuid.UUID) -> SessionResult:
-        ...
+        finished_session = await self.repo.finish_session(user_id, session_id)
+
+        if not finished_session:
+            logger.warning(f"Session not found for finish: {session_id}")
+            raise ValueError("Session not found")
+
+        result_data = {
+            **finished_session.model_dump(),
+            **calculate_session_stats(finished_session)
+        }
+
+        logger.info(f"Successful finishing session: {session_id}")
+        return SessionResult.model_validate(result_data)
 
     @service_handler
     async def abandon_session(self, user_id: uuid.UUID, session_id: uuid.UUID) -> bool:
         ...
 
     @service_handler
-    async def get_next_card(self, user_id: uuid.UUID, session_id: uuid.UUID, limit: int) -> CardResponse:
-        ...
+    async def get_next_card(self, user_id: uuid.UUID, session_id: uuid.UUID) -> CardResponse:
+        next_card = await self.repo.get_next_card(user_id, session_id)
+
+        if not next_card:
+            logger.warning(f"Next card not found for session: {session_id}")
+            raise ValueError("Next card not found")
+
+        logger.info(f"Successfully retrieved next card for session: {session_id}")
+        return next_card
 
     @service_handler
-    async def submit_answer(self, user_id: uuid.UUID, session_id: uuid.UUID, card_id: uuid.UUID,
-                            answer: CardStatus) -> SessionResponse:
-        ...
+    async def submit_answer(self, user_id: uuid.UUID, session_id: uuid.UUID, answer_data: SubmitAnswerRequest) -> SessionResponse:
+        # need ro check if session exist, status==active, if mode==exam then answer_data.answer!=review
+        # answer_data.card_id in Session.card_queue
+
+        updated_session = await self.repo.submit_answer(
+            user_id,
+            session_id,
+            answer_data
+        )
+
+        if not updated_session:
+            logger.warning(f"Failed to update session: {session_id}")
+            raise ValueError("Failed to update session")
+
+        logger.info(f"Successfully submitted answer for session: {session_id}")
+        return SessionResponse.model_validate(updated_session)
 

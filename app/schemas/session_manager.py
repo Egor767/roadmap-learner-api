@@ -4,6 +4,8 @@ import uuid
 from datetime import datetime
 from typing import Optional, Dict, Any, List
 
+from app.schemas.card import CardStatus
+
 
 class SessionSettings(BaseModel):
     ...
@@ -75,9 +77,15 @@ class SessionResult(BaseModel):
     user_id: uuid.UUID
     roadmap_id: uuid.UUID
     mode: SessionMode
+    total_cards: int
     correct_answers: int
     incorrect_answers: int
     review_answers: int
     accuracy_percentage: float
     completed_at: datetime
+
+
+class SubmitAnswerRequest(BaseModel):
+    card_id: uuid.UUID
+    answer: CardStatus
 
