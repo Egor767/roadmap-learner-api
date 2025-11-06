@@ -3,8 +3,8 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 from typing import AsyncGenerator
 
 from app.db.interface import IDatabase
-from app.core.config import db_config
-from app.db.postgres.base import Base
+from app.core.config import db_settings
+from app.models.postgres.base import Base
 
 
 class PostgresDB(IDatabase):
@@ -14,7 +14,7 @@ class PostgresDB(IDatabase):
 
     async def connect(self) -> None:
         self.engine = create_async_engine(
-            db_config.url, echo=db_config.echo, future=True, poolclass=NullPool
+            db_settings.url, echo=db_settings.echo, future=True, poolclass=NullPool
         )
         self.session_factory = async_sessionmaker(
             self.engine, class_=AsyncSession, expire_on_commit=False, autoflush=False

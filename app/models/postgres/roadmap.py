@@ -3,12 +3,10 @@ from sqlalchemy import Column, String, Text, DateTime, Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 
-from app.db.postgres.base import Base
+from .base import Base
 
 
 class RoadMap(Base):
-    __tablename__ = "roadmaps"
-
     road_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), nullable=False)
     title = Column(String(255), nullable=False)

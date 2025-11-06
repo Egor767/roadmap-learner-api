@@ -1,8 +1,7 @@
-import os
 from pydantic_settings import BaseSettings
 
 
-class DbConfig(BaseSettings):
+class DBSettings(BaseSettings):
     DB_HOST: str = "localhost"
     DB_PORT: str = "5433"
     DB_USERNAME: str = "postgres"
@@ -18,4 +17,4 @@ class DbConfig(BaseSettings):
         env_file = ".env"
 
 
-db_config = DbConfig()
+db_settings = DBSettings()

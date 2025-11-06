@@ -4,12 +4,10 @@ from sqlalchemy import Column, DateTime, Integer, Enum as SQLEnum, JSON
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.sql import func
 
-from app.db.postgres.base import Base
+from .base import Base
 
 
 class Session(Base):
-    __tablename__ = "sessions"
-
     session_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), nullable=False)
     roadmap_id = Column(UUID(as_uuid=True), nullable=False)

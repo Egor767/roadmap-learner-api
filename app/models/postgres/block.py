@@ -4,12 +4,10 @@ from sqlalchemy import Column, String, DateTime, Text, Integer, Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 
-from app.db.postgres.base import Base
+from .base import Base
 
 
 class Block(Base):
-    __tablename__ = "blocks"
-
     block_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     road_id = Column(UUID(as_uuid=True), nullable=False)
     title = Column(String(255), nullable=False)
