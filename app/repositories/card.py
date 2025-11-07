@@ -3,7 +3,7 @@ from typing import List
 from sqlalchemy import select, insert, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.dependencies import transaction_manager
+from app.core.db import transaction_manager
 from app.core.handlers import repository_handler
 from app.core.types import BaseIDType
 from app.models.postgres.card import Card
@@ -36,7 +36,7 @@ class CardRepository:
     async def get_block_card(
         self, block_id: BaseIDType, card_id: BaseIDType
     ) -> CardInDB:
-        stmt = select(Card).where(Card.block_id == block_id, Card.id == card_id)
+        stmt = select(Card).where(Card.id == card_id).where(Card.block_id == block_id)
         result = await self.session.execute(stmt)
         card = result.scalar_one_or_none()
         return map_to_schema(card) if card else None

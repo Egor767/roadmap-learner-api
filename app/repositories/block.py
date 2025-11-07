@@ -3,7 +3,7 @@ from typing import List
 from sqlalchemy import select, insert, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.dependencies import transaction_manager
+from app.core.db import transaction_manager
 from app.core.handlers import repository_handler
 from app.core.types import BaseIDType
 from app.models.postgres.block import Block
@@ -29,7 +29,11 @@ class BlockRepository:
     async def get_roadmap_block(
         self, roadmap_id: BaseIDType, block_id: BaseIDType
     ) -> BlockInDB:
-        stmt = select(Block).where(Block.id == block_id, Block.roadmap_id == roadmap_id)
+        stmt = (
+            select(Block)
+            .where(Block.id == block_id)
+            .where(Block.roadmap_id == roadmap_id)
+        )
         result = await self.session.execute(stmt)
         block = result.scalar_one_or_none()
         return map_to_schema(block) if block else None
@@ -69,8 +73,10 @@ class BlockRepository:
     @repository_handler
     async def delete_block(self, roadmap_id: BaseIDType, block_id: BaseIDType) -> bool:
         async with transaction_manager(self.session):
-            stmt = delete(Block).where(
-                Block.roadmap_id == roadmap_id, Block.id == block_id
+            stmt = (
+                delete(Block)
+                .where(Block.id == block_id)
+                .where(Block.roadmap_id == roadmap_id)
             )
             result = await self.session.execute(stmt)
             return result.rowcount > 0
@@ -82,7 +88,8 @@ class BlockRepository:
         async with transaction_manager(self.session):
             stmt = (
                 update(Block)
-                .where(Block.roadmap_id == road_id, Block.id == block_id)
+                .where(Block.id == block_id)
+                .where(Block.roadmap_id == road_id)
                 .values(**block_data)
                 .returning(Block)
             )

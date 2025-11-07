@@ -3,7 +3,7 @@ from typing import List
 from sqlalchemy import select, insert, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.dependencies import transaction_manager
+from app.core.db import transaction_manager
 from app.core.handlers import repository_handler
 from app.core.types import BaseIDType
 from app.models.postgres.roadmap import Roadmap
@@ -29,8 +29,10 @@ class RoadmapRepository:
     async def get_user_roadmap(
         self, user_id: BaseIDType, roadmap_id: BaseIDType
     ) -> RoadMapInDB:
-        stmt = select(Roadmap).where(
-            Roadmap.id == roadmap_id, Roadmap.user_id == user_id
+        stmt = (
+            select(Roadmap)
+            .where(Roadmap.id == roadmap_id)
+            .where(Roadmap.user_id == user_id)
         )
         result = await self.session.execute(stmt)
         roadmap = result.scalar_one_or_none()
@@ -64,8 +66,10 @@ class RoadmapRepository:
     @repository_handler
     async def delete_roadmap(self, user_id: BaseIDType, roadmap_id: BaseIDType) -> bool:
         async with transaction_manager(self.session):
-            stmt = delete(Roadmap).where(
-                Roadmap.id == roadmap_id, Roadmap.user_id == user_id
+            stmt = (
+                delete(Roadmap)
+                .where(Roadmap.id == roadmap_id)
+                .where(Roadmap.user_id == user_id)
             )
             result = await self.session.execute(stmt)
             return result.rowcount > 0
@@ -77,7 +81,8 @@ class RoadmapRepository:
         async with transaction_manager(self.session):
             stmt = (
                 update(Roadmap)
-                .where(Roadmap.id == roadmap_id, Roadmap.user_id == user_id)
+                .where(Roadmap.id == roadmap_id)
+                .where(Roadmap.user_id == user_id)
                 .values(**roadmap_data)
                 .returning(Roadmap)
             )

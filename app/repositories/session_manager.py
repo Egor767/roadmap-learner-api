@@ -3,7 +3,7 @@ from typing import List
 from sqlalchemy import select, insert, update, delete, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.dependencies import transaction_manager
+from app.core.db import transaction_manager
 from app.core.handlers import repository_handler
 from app.core.logging import session_manager_repository_logger as logger
 from app.core.types import BaseIDType
