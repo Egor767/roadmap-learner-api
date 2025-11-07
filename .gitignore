@@ -35,7 +35,6 @@ ENV/
 *.sqlite3
 *.sqlite
 *.db-journal
-migrations/versions/*.py  # Alembic generated migration files (keep only manually created)
 
 # Logs
 *.log
