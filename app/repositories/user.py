@@ -10,8 +10,10 @@ from app.models.postgres.user import User
 from app.schemas.user import UserInDB, UserFilters
 
 
-def map_to_schema(db_user: User) -> UserInDB:
-    return UserInDB.model_validate(db_user)
+def map_to_schema(db_user: Optional[User]) -> Optional[UserInDB]:
+    if db_user:
+        return UserInDB.model_validate(db_user)
+    return
 
 
 class UserRepository:
@@ -26,11 +28,11 @@ class UserRepository:
         return [map_to_schema(user) for user in users]
 
     @repository_handler
-    async def get_user_by_id(self, uid: BaseIDType) -> Optional[UserInDB]:
+    async def get_user_by_id(self, uid: BaseIDType) -> UserInDB:
         stmt = select(User).where(User.id == uid)
         result = await self.session.execute(stmt)
         db_user = result.scalar_one_or_none()
-        return map_to_schema(db_user) if db_user else None
+        return map_to_schema(db_user)
 
     @repository_handler
     async def get_users(self, filters: UserFilters) -> List[UserInDB]:
@@ -50,7 +52,7 @@ class UserRepository:
         async with transaction_manager(self.session):
             stmt = insert(User).values(**user_data).returning(User)
             result = await self.session.execute(stmt)
-            db_user = result.scalar_one()
+            db_user = result.scalar_one_or_none()
             return map_to_schema(db_user)
 
     @repository_handler
@@ -61,11 +63,11 @@ class UserRepository:
             return result.rowcount > 0
 
     @repository_handler
-    async def update_user(self, uid: BaseIDType, user_data: dict) -> Optional[UserInDB]:
+    async def update_user(self, uid: BaseIDType, user_data: dict) -> UserInDB:
         async with transaction_manager(self.session):
             stmt = (
                 update(User).where(User.id == uid).values(**user_data).returning(User)
             )
             result = await self.session.execute(stmt)
             db_user = result.scalar_one_or_none()
-            return map_to_schema(db_user) if db_user else None
+            return map_to_schema(db_user)

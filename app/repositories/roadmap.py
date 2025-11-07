@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from sqlalchemy import select, insert, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,8 +10,10 @@ from app.models.postgres.roadmap import Roadmap
 from app.schemas.roadmap import RoadMapInDB, RoadMapFilters
 
 
-def map_to_schema(db_user: Roadmap) -> RoadMapInDB:
-    return RoadMapInDB.model_validate(db_user)
+def map_to_schema(db_user: Optional[Roadmap]) -> Optional[RoadMapInDB]:
+    if db_user:
+        return RoadMapInDB.model_validate(db_user)
+    return
 
 
 class RoadmapRepository:
@@ -36,7 +38,7 @@ class RoadmapRepository:
         )
         result = await self.session.execute(stmt)
         roadmap = result.scalar_one_or_none()
-        return map_to_schema(roadmap) if roadmap else None
+        return map_to_schema(roadmap)
 
     @repository_handler
     async def get_user_roadmaps(
@@ -60,7 +62,7 @@ class RoadmapRepository:
         async with transaction_manager(self.session):
             stmt = insert(Roadmap).values(**roadmap_data).returning(Roadmap)
             result = await self.session.execute(stmt)
-            db_roadmap = result.scalar_one()
+            db_roadmap = result.scalar_one_or_none()
             return map_to_schema(db_roadmap)
 
     @repository_handler
@@ -88,4 +90,4 @@ class RoadmapRepository:
             )
             result = await self.session.execute(stmt)
             db_roadmap = result.scalar_one_or_none()
-            return map_to_schema(db_roadmap) if db_roadmap else None
+            return map_to_schema(db_roadmap)

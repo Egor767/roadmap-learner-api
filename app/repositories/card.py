@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from sqlalchemy import select, insert, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,8 +10,10 @@ from app.models.postgres.card import Card
 from app.schemas.card import CardInDB, CardFilters
 
 
-def map_to_schema(db_card: Card) -> CardInDB:
-    return CardInDB.model_validate(db_card)
+def map_to_schema(db_card: Optional[Card]) -> Optional[CardInDB]:
+    if db_card:
+        return CardInDB.model_validate(db_card)
+    return
 
 
 class CardRepository:
@@ -30,7 +32,7 @@ class CardRepository:
         stmt = select(Card).where(Card.id == card_id)
         result = await self.session.execute(stmt)
         card = result.scalar_one_or_none()
-        return map_to_schema(card) if card else None
+        return map_to_schema(card)
 
     @repository_handler
     async def get_block_card(
@@ -39,7 +41,7 @@ class CardRepository:
         stmt = select(Card).where(Card.id == card_id).where(Card.block_id == block_id)
         result = await self.session.execute(stmt)
         card = result.scalar_one_or_none()
-        return map_to_schema(card) if card else None
+        return map_to_schema(card)
 
     @repository_handler
     async def get_block_cards(
@@ -67,7 +69,7 @@ class CardRepository:
         async with transaction_manager(self.session):
             stmt = insert(Card).values(**card_data).returning(Card)
             result = await self.session.execute(stmt)
-            db_card = result.scalar_one()
+            db_card = result.scalar_one_or_none()
             return map_to_schema(db_card)
 
     @repository_handler
@@ -90,4 +92,4 @@ class CardRepository:
             )
             result = await self.session.execute(stmt)
             db_card = result.scalar_one_or_none()
-            return map_to_schema(db_card) if db_card else None
+            return map_to_schema(db_card)

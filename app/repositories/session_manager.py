@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from sqlalchemy import select, insert, update, delete, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,8 +18,10 @@ from app.schemas.session_manager import (
 )
 
 
-def map_to_schema(db_session: Session) -> SessionInDB:
-    return SessionInDB.model_validate(db_session)
+def map_to_schema(db_session: Optional[Session]) -> Optional[SessionInDB]:
+    if db_session:
+        return SessionInDB.model_validate(db_session)
+    return
 
 
 class SessionManagerRepository:
@@ -42,8 +44,7 @@ class SessionManagerRepository:
         )
         result = await self.session.execute(stmt)
         session = result.scalar_one_or_none()
-        logger.info(f"session: {session}, schema: {map_to_schema(session)}")
-        return map_to_schema(session) if session else None
+        return map_to_schema(session)
 
     @repository_handler
     async def get_user_sessions(
@@ -69,7 +70,7 @@ class SessionManagerRepository:
         async with transaction_manager(self.session):
             stmt = insert(Session).values(**session_create_data).returning(Session)
             result = await self.session.execute(stmt)
-            db_session = result.scalar_one()
+            db_session = result.scalar_one_or_none()
             return map_to_schema(db_session)
 
     @repository_handler
@@ -89,7 +90,7 @@ class SessionManagerRepository:
             )
             result = await self.session.execute(stmt)
             db_session = result.scalar_one_or_none()
-            return map_to_schema(db_session) if db_session else None
+            return map_to_schema(db_session)
 
     @repository_handler
     async def abandon_session(
@@ -111,15 +112,16 @@ class SessionManagerRepository:
     @repository_handler
     async def get_next_card_id(
         self, user_id: BaseIDType, session_id: BaseIDType
-    ) -> BaseIDType:
+    ) -> Optional[BaseIDType]:
         stmt = select(Session).where(
             Session.id == session_id, Session.user_id == user_id
         )
         result = await self.session.execute(stmt)
         db_session = result.scalar_one_or_none()
-
         next_card_id = db_session.card_queue[db_session.current_card_index]
-        return next_card_id if next_card_id else None
+        if next_card_id:
+            return next_card_id
+        return
 
     @repository_handler
     async def submit_answer(
@@ -154,8 +156,8 @@ class SessionManagerRepository:
             )
 
             result = await self.session.execute(stmt)
-            updated_db_session = result.scalar_one()
-            return map_to_schema(updated_db_session) if updated_db_session else None
+            updated_db_session = result.scalar_one_or_none()
+            return map_to_schema(updated_db_session)
 
     @repository_handler
     async def delete_session(self, user_id: BaseIDType, session_id: BaseIDType) -> bool:

@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from sqlalchemy import select, insert, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,8 +10,10 @@ from app.models.postgres.block import Block
 from app.schemas.block import BlockInDB, BlockFilters
 
 
-def map_to_schema(db_block: Block) -> BlockInDB:
-    return BlockInDB.model_validate(db_block)
+def map_to_schema(db_block: Optional[Block]) -> Optional[BlockInDB]:
+    if db_block:
+        return BlockInDB.model_validate(db_block)
+    return
 
 
 class BlockRepository:
@@ -36,7 +38,7 @@ class BlockRepository:
         )
         result = await self.session.execute(stmt)
         block = result.scalar_one_or_none()
-        return map_to_schema(block) if block else None
+        return map_to_schema(block)
 
     @repository_handler
     async def get_roadmap_blocks(
@@ -60,14 +62,14 @@ class BlockRepository:
         stmt = select(Block).where(Block.id == block_id)
         result = await self.session.execute(stmt)
         db_block = result.scalar_one_or_none()
-        return map_to_schema(db_block) if db_block else None
+        return map_to_schema(db_block)
 
     @repository_handler
     async def create_block(self, block_data: dict) -> BlockInDB:
         async with transaction_manager(self.session):
             stmt = insert(Block).values(**block_data).returning(Block)
             result = await self.session.execute(stmt)
-            db_block = result.scalar_one()
+            db_block = result.scalar_one_or_none()
             return map_to_schema(db_block)
 
     @repository_handler
@@ -95,4 +97,4 @@ class BlockRepository:
             )
             result = await self.session.execute(stmt)
             db_roadmap = result.scalar_one_or_none()
-            return map_to_schema(db_roadmap) if db_roadmap else None
+            return map_to_schema(db_roadmap)
