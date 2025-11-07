@@ -17,7 +17,7 @@ from app.services.card import CardService
 from app.services.session_manager import SessionManagerService
 
 
-# user
+# USER
 async def get_user_repository(
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> UserRepository:
@@ -31,7 +31,7 @@ async def get_user_service(
     return UserService(repo)
 
 
-# roadmap
+# ROADMAP
 async def get_roadmap_repository(
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> RoadmapRepository:
@@ -45,7 +45,7 @@ async def get_roadmap_service(
     return RoadMapService(repo)
 
 
-# block
+# BLOCK
 async def get_block_repository(
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> BlockRepository:
@@ -59,7 +59,7 @@ async def get_block_service(
     return BlockService(repo)
 
 
-# card
+# CARD
 async def get_card_repository(
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> CardRepository:
@@ -73,7 +73,7 @@ async def get_card_service(
     return CardService(repo)
 
 
-# session manager
+# SESSION_MANAGER
 async def get_session_manager_repository(
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> SessionManagerRepository:
