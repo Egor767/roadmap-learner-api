@@ -1,25 +1,33 @@
-import uuid
-from sqlalchemy import Column, String, Text, DateTime, Enum as SQLEnum
-from sqlalchemy.dialects.postgresql import UUID
+from datetime import datetime
+
+from sqlalchemy import String, DateTime, Enum as SQLEnum
+from sqlalchemy.orm import mapped_column, Mapped
 from sqlalchemy.sql import func
 
 from .base import Base
+from .mixins import UserRelationMixin
 
 
-class RoadMap(Base):
-    road_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), nullable=False)
-    title = Column(String(255), nullable=False)
-    description = Column(Text)
-    status = Column(
+class Roadmap(UserRelationMixin, Base):
+    _user_back_populates = "roadmaps"
+
+    title: Mapped[str] = mapped_column(String(30), nullable=False)
+    description: Mapped[str] = mapped_column(String(100))
+    status: Mapped[str] = mapped_column(
         SQLEnum("draft", "active", "archived", name="roadmap_status"), default="draft"
     )
-    created_at = Column(DateTime(timezone=True), default=func.now())
-    updated_at = Column(
-        DateTime(timezone=True), onupdate=func.now(), default=func.now()
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=func.now(), server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        onupdate=func.now(),
+        default=func.now(),
+        server_default=func.now(),
     )
 
+    def __str__(self):
+        return f"{self.__class__.__name__}(id={self.id}, title={self.title!r}), status={self.status}"
+
     def __repr__(self):
-        return (
-            f"<RoadMap(id={self.road_id}, user_id={self.user_id}, title={self.title})>"
-        )
+        return str(self)

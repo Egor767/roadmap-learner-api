@@ -22,7 +22,7 @@ logging.basicConfig(
     ],
 )
 
-app = FastAPI(title="RoadMap Learner API", version="1.0", lifespan=lifespan)
+app = FastAPI(title="Roadmap Learner API", version="1.0", lifespan=lifespan)
 
 
 @app.get("/")
