@@ -3,6 +3,7 @@ from typing import List, Annotated
 from fastapi import APIRouter, Depends
 from starlette import status
 
+from app.core.config import settings
 from app.core.dependencies import get_session_manager_service
 from app.core.handlers import router_handler
 from app.core.types import BaseIdType
@@ -16,7 +17,10 @@ from app.schemas.session_manager import (
 )
 from app.services.session_manager import SessionManagerService
 
-router = APIRouter(prefix="/sessions", tags=["sessions"])
+router = APIRouter(
+    prefix=settings.api.v1.sessions,
+    tags=["Sessions"],
+)
 
 
 @router.get(

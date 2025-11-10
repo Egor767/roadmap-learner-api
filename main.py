@@ -5,7 +5,8 @@ import uvicorn
 from fastapi import FastAPI
 from starlette.responses import RedirectResponse
 
-from app.api.v1 import main_router
+from app.api import router as api_router
+from app.core.config import settings
 
 
 @asynccontextmanager
@@ -22,7 +23,11 @@ logging.basicConfig(
     ],
 )
 
-app = FastAPI(title="Roadmap Learner API", version="1.0", lifespan=lifespan)
+app = FastAPI(
+    title="Roadmap Learner API",
+    version="1.0",
+    lifespan=lifespan,
+)
 
 
 @app.get("/")
@@ -30,8 +35,18 @@ async def root():
     return RedirectResponse(url="/docs")
 
 
-app.include_router(main_router, prefix="/api/v1.0")
+@app.get("/main")
+async def main():
+    return "It's working"
+
+
+app.include_router(api_router)
 
 
 if __name__ == "__main__":
-    uvicorn.run(app="main:app", host="localhost", port=8080, reload=True)
+    uvicorn.run(
+        app="main:app",
+        host=settings.run.host,
+        port=settings.run.port,
+        reload=True,
+    )

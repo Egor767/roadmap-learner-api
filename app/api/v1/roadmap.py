@@ -2,6 +2,7 @@ from typing import List, Annotated
 
 from fastapi import APIRouter, Depends, status
 
+from app.core.config import settings
 from app.core.dependencies import get_roadmap_service
 from app.core.handlers import router_handler
 from app.core.types import BaseIdType
@@ -13,7 +14,10 @@ from app.schemas.roadmap import (
 )
 from app.services.roadmap import RoadMapService
 
-router = APIRouter(prefix="/roadmaps", tags=["roadmaps"])
+router = APIRouter(
+    prefix=settings.api.v1.roadmaps,
+    tags=["Roadmaps"],
+)
 
 
 @router.get(

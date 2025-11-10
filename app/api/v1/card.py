@@ -2,6 +2,7 @@ from typing import List, Annotated
 
 from fastapi import APIRouter, Depends, status
 
+from app.core.config import settings
 from app.core.dependencies import get_card_service
 from app.core.handlers import router_handler
 from app.core.types import BaseIdType
@@ -9,7 +10,8 @@ from app.schemas.card import CardResponse, CardCreate, CardUpdate, CardFilters
 from app.services.card import CardService
 
 router = APIRouter(
-    prefix="/roadmaps/{roadmap_id}/blocks/{block_id}/cards", tags=["cards"]
+    prefix=settings.api.v1.cards,
+    tags=["Cards"],
 )
 
 
@@ -82,7 +84,10 @@ async def update_card(
 
 
 # -------------------------------------- RESOURCE ROUTER --------------------------------------
-resource_router = APIRouter(prefix="/cards", tags=["cards-resources"])
+resource_router = APIRouter(
+    prefix=settings.api.v1.cards_resource,
+    tags=["Cards Resources"],
+)
 
 
 @resource_router.get("/{card_id}", response_model=CardResponse)

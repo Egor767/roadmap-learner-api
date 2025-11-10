@@ -2,13 +2,17 @@ from typing import List, Annotated
 
 from fastapi import APIRouter, Depends, status
 
+from app.core.config import settings
 from app.core.dependencies import get_block_service
 from app.core.handlers import router_handler
 from app.core.types import BaseIdType
 from app.schemas.block import BlockResponse, BlockCreate, BlockUpdate, BlockFilters
 from app.services.block import BlockService
 
-router = APIRouter(prefix="/roadmaps/{roadmap_id}/blocks", tags=["blocks"])
+router = APIRouter(
+    prefix=settings.api.v1.blocks,
+    tags=["Blocks"],
+)
 
 
 @router.get("/all", response_model=List[BlockResponse], status_code=status.HTTP_200_OK)
@@ -80,7 +84,10 @@ async def update_block(
 
 
 # -------------------------------------- RESOURCE ROUTER --------------------------------------
-resource_router = APIRouter(prefix="/blocks", tags=["blocks-resources"])
+resource_router = APIRouter(
+    prefix=settings.api.v1.blocks_resource,
+    tags=["Blocks Resources"],
+)
 
 
 @resource_router.get("/{block_id}", response_model=BlockResponse)

@@ -2,13 +2,17 @@ from typing import List, Annotated
 
 from fastapi import APIRouter, Depends, status
 
+from app.core.config import settings
 from app.core.dependencies import get_user_service
 from app.core.handlers import router_handler
 from app.core.types import BaseIdType
 from app.schemas.user import UserCreate, UserResponse, UserFilters, UserUpdate
 from app.services.user import UserService
 
-router = APIRouter(prefix="/users", tags=["users"])
+router = APIRouter(
+    prefix=settings.api.v1.users,
+    tags=["Users"],
+)
 
 
 @router.get("/all", response_model=List[UserResponse], status_code=status.HTTP_200_OK)
