@@ -112,3 +112,5 @@ staticfiles/
 *.pem
 *.key
 *.crt
+
+.idea
