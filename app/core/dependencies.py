@@ -1,0 +1,87 @@
+from typing import AsyncGenerator, Annotated, TYPE_CHECKING
+
+from fastapi import Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.db import get_db_session
+from app.repositories.roadmap import RoadmapRepository
+from app.repositories.user import UserRepository
+from app.repositories.block import BlockRepository
+from app.repositories.card import CardRepository
+from app.repositories.session_manager import SessionManagerRepository
+
+from app.services.roadmap import RoadMapService
+from app.services.user import UserService
+from app.services.block import BlockService
+from app.services.card import CardService
+from app.services.session_manager import SessionManagerService
+
+
+# USER
+async def get_user_repository(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> UserRepository:
+    return UserRepository(session)
+
+
+async def get_user_service(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> UserService:
+    repo = UserRepository(session)
+    return UserService(repo)
+
+
+# ROADMAP
+async def get_roadmap_repository(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> RoadmapRepository:
+    return RoadmapRepository(session)
+
+
+async def get_roadmap_service(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> RoadMapService:
+    repo = RoadmapRepository(session)
+    return RoadMapService(repo)
+
+
+# BLOCK
+async def get_block_repository(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> BlockRepository:
+    return BlockRepository(session)
+
+
+async def get_block_service(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> BlockService:
+    repo = BlockRepository(session)
+    return BlockService(repo)
+
+
+# CARD
+async def get_card_repository(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> CardRepository:
+    return CardRepository(session)
+
+
+async def get_card_service(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> CardService:
+    repo = CardRepository(session)
+    return CardService(repo)
+
+
+# SESSION_MANAGER
+async def get_session_manager_repository(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> SessionManagerRepository:
+    return SessionManagerRepository(session)
+
+
+async def get_session_manager_service(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> SessionManagerService:
+    repo = SessionManagerRepository(session)
+    return SessionManagerService(repo)
