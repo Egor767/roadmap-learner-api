@@ -1,6 +1,7 @@
 from typing import Annotated
 
 from fastapi import Depends
+from fastapi_users.authentication import AuthenticationBackend
 from fastapi_users.authentication.strategy import AccessTokenDatabase, DatabaseStrategy
 from fastapi_users_db_sqlalchemy import SQLAlchemyUserDatabase
 from fastapi_users_db_sqlalchemy.access_token import SQLAlchemyAccessTokenDatabase
@@ -8,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.db import get_db_session
+from app.core.authentication.transport import bearer_transport
 from app.models.postgres import User, AccessToken
 from app.repositories import (
     UserRepository,
@@ -49,6 +51,13 @@ def get_database_strategy(
         access_token_db,
         lifetime_seconds=settings.access_token.lifetime_seconds,
     )
+
+
+authentication_backend = AuthenticationBackend(
+    name="access-tokens-db",
+    transport=bearer_transport,
+    get_strategy=get_database_strategy,
+)
 
 
 # USER

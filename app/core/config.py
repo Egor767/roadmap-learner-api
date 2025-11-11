@@ -38,7 +38,7 @@ class RunConfig(BaseModel):
 
 class ApiV1Prefix(BaseModel):
     prefix: str = "/v1"
-    auth: str = "/auth"
+    auth: str = "/authentication"
     users: str = "/users"
     roadmaps: str = "/roadmaps"
     blocks: str = "/roadmaps/{roadmap_id}/blocks"
@@ -54,7 +54,7 @@ class ApiPrefix(BaseModel):
 
     @property
     def bearer_token_url(self) -> str:
-        # api/v1/auth/login
+        # api/v1/authentication/login
         parts = (self.prefix, self.v1.prefix, self.v1.auth, "/login")
         path = "".join(parts)
         # return path[1:]
