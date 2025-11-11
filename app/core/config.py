@@ -1,10 +1,7 @@
 from pathlib import Path
 
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import BaseModel
-
-
-BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 class DBConfig(BaseModel):
@@ -26,9 +23,6 @@ class DBConfig(BaseModel):
     @property
     def url(self) -> str:
         return f"postgresql+asyncpg://{self.username}:{self.password}@{self.host}:{self.port}/{self.name}"
-
-    class Config:
-        env_file = ".env"
 
 
 class RunConfig(BaseModel):
@@ -68,6 +62,15 @@ class AccessToken(BaseModel):
 
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=(
+            ".env.template",
+            ".env",
+        ),
+        case_sensitive=False,
+        env_nested_delimiter="__",
+        env_prefix="APP_CONFIG__",
+    )
     db: DBConfig
     run: RunConfig = RunConfig()
     api: ApiPrefix = ApiPrefix()
