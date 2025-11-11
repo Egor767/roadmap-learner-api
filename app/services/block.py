@@ -16,7 +16,10 @@ class BlockService:
     async def get_all_blocks(self) -> List[BlockResponse]:
         blocks = await self.repo.get_all_blocks()
         validated_blocks = [BlockResponse.model_validate(block) for block in blocks]
-        logger.info(f"Successful get all blocks, count: {len(validated_blocks)}")
+        logger.info(
+            "Successful get all blocks, count: %r",
+            len(validated_blocks),
+        )
         return validated_blocks
 
     @service_handler
@@ -27,7 +30,10 @@ class BlockService:
 
         blocks = await self.repo.get_roadmap_blocks(roadmap_id, filters)
         validated_blocks = [BlockResponse.model_validate(block) for block in blocks]
-        logger.info(f"Successful get roadmap blocks, count: {len(validated_blocks)}")
+        logger.info(
+            "Successful get roadmap blocks, count: %r",
+            len(validated_blocks),
+        )
         return validated_blocks
 
     @service_handler
@@ -38,9 +44,9 @@ class BlockService:
 
         block = await self.repo.get_roadmap_block(roadmap_id, block_id)
         if not block:
-            logger.warning(f"Block not found or access denied")
+            logger.warning("Block(%r) not found or access denied", block_id)
             raise ValueError("Block not found or access denied")
-        logger.info(f"Successful get roadmap block")
+        logger.info("Successful get roadmap block")
         return BlockResponse.model_validate(block)
 
     @service_handler
@@ -51,9 +57,9 @@ class BlockService:
 
         block = await self.repo.get_block(block_id)
         if not block:
-            logger.warning(f"Block not found or access denied")
+            logger.warning("Block(%r) not found or access denied", block_id)
             raise ValueError("Block not found or access denied")
-        logger.info(f"Successful get block")
+        logger.info("Successful get block")
         return BlockResponse.model_validate(block)
 
     @service_handler
@@ -70,11 +76,17 @@ class BlockService:
         block_data["id"] = await generate_base_id()
 
         logger.info(
-            f"Creating new block: {block_create_data.title} for roadmap (roadmap_id={block_data.get('roadmap_id')}): {block_data}"
+            "Creating new block: %r for roadmap (roadmap_id=%r): %r",
+            block_create_data.title,
+            block_data.get("roadmap_id"),
+            block_data,
         )
         created_block = await self.repo.create_block(block_data)
 
-        logger.info(f"Block created successfully: {created_block.id}")
+        logger.info(
+            "Block created successfully: %r",
+            created_block.id,
+        )
         return BlockResponse.model_validate(created_block)
 
     @service_handler
@@ -85,9 +97,9 @@ class BlockService:
 
         success = await self.repo.delete_block(roadmap_id, block_id)
         if success:
-            logger.info(f"Block deleted successfully: {block_id}")
+            logger.info("Block deleted successfully: %r", block_id)
         else:
-            logger.warning(f"Block not found for deletion: {block_id}")
+            logger.warning("Block not found for deletion: %r", block_id)
         return success
 
     @service_handler
@@ -101,12 +113,16 @@ class BlockService:
         # check roots
 
         block_data = block_update_data.model_dump(exclude_unset=True)
-        logger.info(f"Updating block {block_id}: {block_data}")
+        logger.info(
+            "Updating block %r: %r",
+            block_id,
+            block_data,
+        )
         updated_block = await self.repo.update_block(roadmap_id, block_id, block_data)
 
         if not updated_block:
-            logger.warning(f"Block not found for update: {block_id}")
-            raise ValueError("Block not found")
+            logger.warning("Block(%r) not found or access denied", block_id)
+            raise ValueError("Block not found or access denied")
 
-        logger.info(f"Successful updating block: {block_id}")
+        logger.info("Successful updating block: %r", block_id)
         return BlockResponse.model_validate(updated_block)

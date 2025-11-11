@@ -2,7 +2,7 @@ from typing import List
 
 from app.core.handlers import service_handler
 from app.core.types import BaseIdType
-from app.repositories.roadmap import RoadmapRepository
+from app.repositories import RoadmapRepository
 from app.schemas.roadmap import (
     RoadMapCreate,
     RoadMapResponse,
@@ -23,7 +23,10 @@ class RoadMapService:
         validated_roadmaps = [
             RoadMapResponse.model_validate(roadmap) for roadmap in roadmaps
         ]
-        logger.info(f"Successful get all roadmaps, count: {len(validated_roadmaps)}")
+        logger.info(
+            "Successful get all roadmaps, count: %r",
+            len(validated_roadmaps),
+        )
         return validated_roadmaps
 
     @service_handler
@@ -32,9 +35,9 @@ class RoadMapService:
     ) -> RoadMapResponse:
         roadmap = await self.repo.get_user_roadmap(user_id, roadmap_id)
         if not roadmap:
-            logger.warning(f"Roadmap not found or access denied")
+            logger.warning("Roadmap not found or access denied")
             raise ValueError("Roadmap not found or access denied")
-        logger.info(f"Successful get user roadmap")
+        logger.info("Successful get user roadmap")
         return RoadMapResponse.model_validate(roadmap)
 
     @service_handler
@@ -46,7 +49,9 @@ class RoadMapService:
             RoadMapResponse.model_validate(roadmap) for roadmap in roadmaps
         ]
         logger.info(
-            f"Retrieved {len(validated_roadmaps)} roadmaps with filters: {filters}"
+            "Retrieved %r roadmaps with filters: %r",
+            len(validated_roadmaps),
+            filters,
         )
         return validated_roadmaps
 
@@ -61,20 +66,25 @@ class RoadMapService:
         roadmap_data["id"] = await generate_base_id()
 
         logger.info(
-            f"Creating new roadmap: {roadmap_create_data.title} for user: {user_id}"
+            "Creating new roadmap: %r for user: %r",
+            roadmap_create_data.title,
+            user_id,
         )
         created_roadmap = await self.repo.create_roadmap(roadmap_data)
 
-        logger.info(f"Roadmap created successfully: {created_roadmap.id}")
+        logger.info(
+            "Roadmap created successfully: %r",
+            created_roadmap.id,
+        )
         return RoadMapResponse.model_validate(created_roadmap)
 
     @service_handler
     async def delete_roadmap(self, user_id: BaseIdType, roadmap_id: BaseIdType) -> bool:
         success = await self.repo.delete_roadmap(user_id, roadmap_id)
         if success:
-            logger.info(f"Roadmap deleted successfully: {roadmap_id}")
+            logger.info("Roadmap deleted successfully: %r", roadmap_id)
         else:
-            logger.warning(f"Roadmap not found for deletion: {roadmap_id}")
+            logger.warning("Roadmap not found for deletion: %r", roadmap_id)
         return success
 
     @service_handler
@@ -85,14 +95,18 @@ class RoadMapService:
         roadmap_update_data: RoadMapUpdate,
     ) -> RoadMapResponse:
         roadmap_data = roadmap_update_data.model_dump(exclude_unset=True)
-        logger.info(f"Updating roadmap {roadmap_id}: {roadmap_data}")
+        logger.info(
+            "Updating roadmap %r: %r",
+            roadmap_id,
+            roadmap_data,
+        )
         updated_roadmap = await self.repo.update_roadmap(
             user_id, roadmap_id, roadmap_data
         )
 
         if not updated_roadmap:
-            logger.warning(f"Roadmap not found for update: {roadmap_id}")
+            logger.warning("Roadmap not found for update: %r", roadmap_id)
             raise ValueError("Roadmap not found")
 
-        logger.info(f"Successful updating roadmap: {roadmap_id}")
+        logger.info("Successful updating roadmap: %r", roadmap_id)
         return RoadMapResponse.model_validate(updated_roadmap)

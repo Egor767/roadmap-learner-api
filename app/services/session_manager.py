@@ -7,7 +7,7 @@ from app.core.logging import session_manager_service_logger as logger
 from app.core.types import BaseIdType
 from app.external.card_service import get_card_from_service
 from app.external.session_manager_service import calculate_session_stats
-from app.repositories.session_manager import SessionManagerRepository
+from app.repositories import SessionManagerRepository
 from app.schemas.card import CardResponse
 from app.schemas.session_manager import (
     SessionResponse,
@@ -29,7 +29,10 @@ class SessionManagerService:
         validated_sessions = [
             SessionResponse.model_validate(session) for session in sessions
         ]
-        logger.info(f"Successful get all sessions, count: {len(validated_sessions)}")
+        logger.info(
+            "Successful get all sessions, count: %r",
+            len(validated_sessions),
+        )
         return validated_sessions
 
     @service_handler
@@ -38,9 +41,9 @@ class SessionManagerService:
     ) -> SessionResponse:
         session = await self.repo.get_user_session(user_id, session_id)
         if not session:
-            logger.warning(f"Session not found or access denied")
+            logger.warning("Session not found or access denied")
             raise ValueError("Session not found or access denied")
-        logger.info(f"Successful get user session")
+        logger.info("Successful get user session")
         return SessionResponse.model_validate(session)
 
     @service_handler
@@ -52,7 +55,9 @@ class SessionManagerService:
             SessionResponse.model_validate(session) for session in sessions
         ]
         logger.info(
-            f"Retrieved {len(validated_sessions)} sessions with filters: {filters}"
+            "Retrieved %r sessions with filters: %r",
+            len(validated_sessions),
+            filters,
         )
         return validated_sessions
 
@@ -68,11 +73,16 @@ class SessionManagerService:
         session_data["id"] = generate_base_id()
 
         logger.info(
-            f"Creating new session: {session_create_data.mode} for user: {user_id}"
+            "Creating new session: %r for user: %r",
+            session_create_data.mode,
+            user_id,
         )
         created_session = await self.repo.create_session(user_id, session_data)
 
-        logger.info(f"Session created successfully: {created_session.session_id}")
+        logger.info(
+            "Session created successfully: %r",
+            created_session.session_id,
+        )
         return SessionResponse.model_validate(created_session)
 
     @service_handler
@@ -82,7 +92,7 @@ class SessionManagerService:
         finished_session = await self.repo.finish_session(user_id, session_id)
 
         if not finished_session:
-            logger.warning(f"Session not found for finish: {session_id}")
+            logger.warning("Session not found for finish: %r", session_id)
             raise ValueError("Session not found")
 
         result_data = {
@@ -90,7 +100,7 @@ class SessionManagerService:
             **calculate_session_stats(finished_session),
         }
 
-        logger.info(f"Successful finishing session: {session_id}")
+        logger.info("Successful finishing session: %r", session_id)
         return SessionResult.model_validate(result_data)
 
     @service_handler
@@ -100,10 +110,11 @@ class SessionManagerService:
         success = await self.repo.abandon_session(user_id, session_id)
 
         if success:
-            logger.info(f"Session abandoned successfully: {session_id}")
+            logger.info("Session abandoned successfully: %r", session_id)
         else:
             logger.warning(
-                f"Failed to abandon session: {session_id} - session not found, not active, or not owned by user"
+                "Failed to abandon session: %r - session not found, not active, or not owned by user",
+                session_id,
             )
 
         return success
@@ -115,10 +126,10 @@ class SessionManagerService:
         next_card_id = await self.repo.get_next_card_id(user_id, session_id)
 
         if not next_card_id:
-            logger.warning(f"Next card not found for session: {session_id}")
+            logger.warning("Next card not found for session: %r", session_id)
             raise ValueError("Next card not found")
 
-        logger.info(f"Successfully retrieved next card_id for session: {session_id}")
+        logger.info("Successfully retrieved next card_id for session: %r", session_id)
 
         card_data = await get_card_from_service(str(user_id), str(next_card_id))
         if not card_data:
@@ -141,10 +152,10 @@ class SessionManagerService:
         )
 
         if not updated_session:
-            logger.warning(f"Failed to update session: {session_id}")
+            logger.warning("Failed to update session: %r", session_id)
             raise ValueError("Failed to update session")
 
-        logger.info(f"Successfully submitted answer for session: {session_id}")
+        logger.info("Successfully submitted answer for session: %r", session_id)
         return SessionResponse.model_validate(updated_session)
 
     @service_handler
@@ -153,7 +164,7 @@ class SessionManagerService:
 
         success = await self.repo.delete_session(user_id, session_id)
         if success:
-            logger.info(f"Session deleted successfully: {session_id}")
+            logger.info("Session deleted successfully: %r", session_id)
         else:
-            logger.warning(f"Session not found for deletion: {session_id}")
+            logger.warning("Session not found for deletion: %r", session_id)
         return success
