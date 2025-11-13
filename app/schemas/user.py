@@ -1,13 +1,13 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
 from app.core.types import BaseIdType
 
 
 class UserBase(BaseModel):
-    username: str
-    email: str
+    username: Optional[str] = None
+    email: EmailStr
 
 
 class UserCreate(UserBase):
@@ -16,7 +16,7 @@ class UserCreate(UserBase):
 
 class UserUpdate(BaseModel):
     username: Optional[str] = None
-    email: Optional[str] = None
+    email: Optional[EmailStr] = None
     password: Optional[str] = None
 
 
@@ -24,6 +24,9 @@ class UserResponse(UserBase):
     id: BaseIdType
     created_at: datetime
     updated_at: datetime
+    is_active: bool
+    is_superuser: bool
+    is_verified: bool
 
     class Config:
         from_attributes = True
@@ -31,11 +34,14 @@ class UserResponse(UserBase):
 
 class UserInDB(UserBase):
     id: BaseIdType
-    username: str
-    email: str
+    username: Optional[str]
+    email: EmailStr
     hashed_password: str
     created_at: datetime
     updated_at: datetime
+    is_active: bool
+    is_superuser: bool
+    is_verified: bool
 
     class Config:
         from_attributes = True
@@ -44,6 +50,8 @@ class UserInDB(UserBase):
 class UserFilters(BaseModel):
     email: Optional[str] = None
     username: Optional[str] = None
+    is_active: Optional[bool] = None
+    is_verified: Optional[bool] = None
 
     class Config:
         extra = "forbid"

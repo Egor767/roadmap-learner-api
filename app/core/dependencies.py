@@ -1,11 +1,10 @@
-from typing import Annotated
+from typing import Annotated, TYPE_CHECKING
 
 from fastapi import Depends
 from fastapi_users.authentication import AuthenticationBackend
-from fastapi_users.authentication.strategy import AccessTokenDatabase, DatabaseStrategy
+from fastapi_users.authentication.strategy import DatabaseStrategy
 from fastapi_users_db_sqlalchemy import SQLAlchemyUserDatabase
 from fastapi_users_db_sqlalchemy.access_token import SQLAlchemyAccessTokenDatabase
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.db import get_db_session
@@ -29,10 +28,15 @@ from app.services import (
 )
 
 
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
+    from fastapi_users.authentication.strategy import AccessTokenDatabase
+
+
 # AUTH
 async def get_access_tokens_db(
     session: Annotated[
-        AsyncSession,
+        "AsyncSession",
         Depends(get_db_session),
     ],
 ):
@@ -44,7 +48,7 @@ async def get_access_tokens_db(
 
 def get_database_strategy(
     access_token_db: Annotated[
-        AccessTokenDatabase[AccessToken],
+        "AccessTokenDatabase[AccessToken]",
         Depends(get_access_tokens_db),
     ],
 ) -> DatabaseStrategy:
@@ -62,9 +66,9 @@ authentication_backend = AuthenticationBackend(
 
 
 # USER
-async def get_user_db(
+async def get_users_db(
     session: Annotated[
-        AsyncSession,
+        "AsyncSession",
         Depends(get_db_session),
     ],
 ):
@@ -73,7 +77,7 @@ async def get_user_db(
 
 async def get_user_repository(
     session: Annotated[
-        AsyncSession,
+        "AsyncSession",
         Depends(get_db_session),
     ],
 ) -> UserRepository:
@@ -82,7 +86,7 @@ async def get_user_repository(
 
 async def get_user_service(
     session: Annotated[
-        AsyncSession,
+        "AsyncSession",
         Depends(get_db_session),
     ],
 ) -> UserService:
@@ -91,14 +95,19 @@ async def get_user_service(
 
 
 # USER MANAGER
-async def get_user_manager(user_db=Depends(get_user_db)):
-    yield UserManager(user_db)
+async def get_user_manager(
+    users_db: Annotated[
+        "SQLAlchemyUserDatabase",
+        Depends(get_users_db),
+    ],
+):
+    yield UserManager(users_db)
 
 
 # ROADMAP
 async def get_roadmap_repository(
     session: Annotated[
-        AsyncSession,
+        "AsyncSession",
         Depends(get_db_session),
     ],
 ) -> RoadmapRepository:
@@ -107,7 +116,7 @@ async def get_roadmap_repository(
 
 async def get_roadmap_service(
     session: Annotated[
-        AsyncSession,
+        "AsyncSession",
         Depends(get_db_session),
     ],
 ) -> RoadMapService:
@@ -118,7 +127,7 @@ async def get_roadmap_service(
 # BLOCK
 async def get_block_repository(
     session: Annotated[
-        AsyncSession,
+        "AsyncSession",
         Depends(get_db_session),
     ],
 ) -> BlockRepository:
@@ -127,7 +136,7 @@ async def get_block_repository(
 
 async def get_block_service(
     session: Annotated[
-        AsyncSession,
+        "AsyncSession",
         Depends(get_db_session),
     ],
 ) -> BlockService:
@@ -138,7 +147,7 @@ async def get_block_service(
 # CARD
 async def get_card_repository(
     session: Annotated[
-        AsyncSession,
+        "AsyncSession",
         Depends(get_db_session),
     ],
 ) -> CardRepository:
@@ -147,7 +156,7 @@ async def get_card_repository(
 
 async def get_card_service(
     session: Annotated[
-        AsyncSession,
+        "AsyncSession",
         Depends(get_db_session),
     ],
 ) -> CardService:
@@ -158,7 +167,7 @@ async def get_card_service(
 # SESSION_MANAGER
 async def get_session_manager_repository(
     session: Annotated[
-        AsyncSession,
+        "AsyncSession",
         Depends(get_db_session),
     ],
 ) -> SessionManagerRepository:
@@ -167,7 +176,7 @@ async def get_session_manager_repository(
 
 async def get_session_manager_service(
     session: Annotated[
-        AsyncSession,
+        "AsyncSession",
         Depends(get_db_session),
     ],
 ) -> SessionManagerService:

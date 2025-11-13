@@ -32,7 +32,7 @@ class RunConfig(BaseModel):
 
 class ApiV1Prefix(BaseModel):
     prefix: str = "/v1"
-    auth: str = "/authentication"
+    auth: str = "/auth"
     users: str = "/users"
     roadmaps: str = "/roadmaps"
     blocks: str = "/roadmaps/{roadmap_id}/blocks"
