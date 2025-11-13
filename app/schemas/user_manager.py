@@ -6,7 +6,7 @@ from app.core.types import BaseIdType
 
 
 class UserRead(schemas.BaseUser[BaseIdType]):
-    username: str
+    username: Optional[str] = None
 
 
 class UserCreate(schemas.BaseUserCreate):
@@ -14,4 +14,4 @@ class UserCreate(schemas.BaseUserCreate):
 
 
 class UserUpdate(schemas.BaseUserUpdate):
-    username: str
+    username: Optional[str] = None

@@ -1,7 +1,8 @@
-from enum import Enum
-from pydantic import BaseModel
 from datetime import datetime
+from enum import Enum
 from typing import Optional
+
+from pydantic import BaseModel
 
 from app.core.types import BaseIdType
 

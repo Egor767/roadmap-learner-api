@@ -5,12 +5,12 @@ from app.core.types import BaseIdType
 
 
 def id_generator() -> Optional[BaseIdType]:
-    if isinstance(BaseIdType, uuid.UUID):
+    if issubclass(BaseIdType, uuid.UUID):
         return uuid.uuid4()
     return
 
 
 def server_id_generator() -> str:
-    if isinstance(BaseIdType, uuid.UUID):
+    if issubclass(BaseIdType, uuid.UUID):
         return "gen_random_uuid()"
     return ""

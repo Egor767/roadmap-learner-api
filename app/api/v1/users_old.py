@@ -10,8 +10,8 @@ from app.schemas.user import UserCreate, UserResponse, UserFilters, UserUpdate
 from app.services import UserService
 
 router = APIRouter(
-    prefix=settings.api.v1.users,
-    tags=["Users"],
+    prefix=settings.api.v1.users_service,
+    tags=["User Service"],
 )
 
 

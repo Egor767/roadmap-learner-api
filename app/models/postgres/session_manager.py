@@ -1,5 +1,5 @@
 from sqlalchemy import Column, DateTime, Integer, Enum as SQLEnum
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy.dialects.postgresql import JSONB
 
 from .base import Base
 from .mixins import (

@@ -1,8 +1,9 @@
 from fastapi_users_db_sqlalchemy.access_token import (
     SQLAlchemyBaseAccessTokenTable,
 )
-from .base import Base
+
 from app.core.types import BaseIdType
+from .base import Base
 from .mixins import UserRelationMixin
 
 

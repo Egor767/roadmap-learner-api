@@ -6,8 +6,8 @@ __all__ = (
     "SessionManagerRepository",
 )
 
-from .user import UserRepository
-from .roadmap import RoadmapRepository
 from .block import BlockRepository
 from .card import CardRepository
+from .roadmap import RoadmapRepository
 from .session_manager import SessionManagerRepository
+from .user import UserRepository

@@ -1,7 +1,5 @@
-from pathlib import Path
-
-from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import BaseModel
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class DBConfig(BaseModel):
@@ -34,6 +32,7 @@ class ApiV1Prefix(BaseModel):
     prefix: str = "/v1"
     auth: str = "/auth"
     users: str = "/users"
+    users_service: str = "/users/service"
     roadmaps: str = "/roadmaps"
     blocks: str = "/roadmaps/{roadmap_id}/blocks"
     blocks_resource: str = "/blocks"

@@ -6,9 +6,9 @@ from fastapi_users.authentication.strategy import DatabaseStrategy
 from fastapi_users_db_sqlalchemy import SQLAlchemyUserDatabase
 from fastapi_users_db_sqlalchemy.access_token import SQLAlchemyAccessTokenDatabase
 
+from app.core.authentication.transport import bearer_transport
 from app.core.config import settings
 from app.core.db import get_db_session
-from app.core.authentication.transport import bearer_transport
 from app.models.postgres import User, AccessToken
 from app.repositories import (
     UserRepository,
@@ -17,7 +17,6 @@ from app.repositories import (
     CardRepository,
     SessionManagerRepository,
 )
-
 from app.services import (
     UserService,
     RoadMapService,
@@ -26,7 +25,6 @@ from app.services import (
     SessionManagerService,
     UserManager,
 )
-
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
@@ -72,7 +70,7 @@ async def get_users_db(
         Depends(get_db_session),
     ],
 ):
-    yield SQLAlchemyUserDatabase(session, User)
+    yield User.get_db(session=session)
 
 
 async def get_user_repository(

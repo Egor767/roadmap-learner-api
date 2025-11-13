@@ -1,8 +1,9 @@
-from enum import Enum
-from pydantic import BaseModel
 import uuid
 from datetime import datetime
+from enum import Enum
 from typing import Optional, List
+
+from pydantic import BaseModel
 
 from app.core.types import BaseIdType
 from app.schemas.card import CardStatus

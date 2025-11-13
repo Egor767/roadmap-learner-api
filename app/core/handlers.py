@@ -1,8 +1,8 @@
+import logging
 from functools import wraps
+
 from fastapi import HTTPException
 from fastapi import status
-import logging
-
 from sqlalchemy.exc import SQLAlchemyError
 
 logger = logging.getLogger(__name__)

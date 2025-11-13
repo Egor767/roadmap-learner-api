@@ -1,6 +1,7 @@
-import aiohttp
 import os
 from typing import Optional
+
+import aiohttp
 
 BASE_URL = os.getenv("BASE_URL", "http://localhost:8080/api/v1.0")
 

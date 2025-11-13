@@ -1,9 +1,8 @@
 from fastapi_users import FastAPIUsers
 
 from app.core.dependencies import get_user_manager, authentication_backend
-from app.models.postgres import User
 from app.core.types import BaseIdType
-
+from app.models.postgres import User
 
 fastapi_users = FastAPIUsers[User, BaseIdType](
     get_user_manager,

@@ -5,7 +5,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import transaction_manager
 from app.core.handlers import repository_handler
-from app.core.logging import session_manager_repository_logger as logger
 from app.core.types import BaseIdType
 from app.models.postgres.session_manager import Session
 from app.schemas.card import CardStatus
