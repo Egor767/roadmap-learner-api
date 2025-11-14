@@ -19,7 +19,6 @@ if TYPE_CHECKING:
 
 
 class SQLAlchemyUserDatabase(SQLAlchemyUserDatabaseGeneric):
-
     async def get_users(self) -> list["User"]:
         statement = select(User).order_by(User.id)
         results = await self.session.scalars(statement)

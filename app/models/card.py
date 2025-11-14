@@ -1,5 +1,7 @@
 from sqlalchemy import String, Enum as SQLEnum
+
 from sqlalchemy.orm import Mapped, mapped_column
+
 
 from .base import Base
 from .mixins import BlockRelationMixin, TimestampMixin, IdMixin
