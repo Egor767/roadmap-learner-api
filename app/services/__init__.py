@@ -1,4 +1,5 @@
 __all__ = (
+    "BaseService",
     "UserService",
     "UserManager",
     "RoadMapService",
@@ -7,6 +8,7 @@ __all__ = (
     "SessionManagerService",
 )
 
+from .base import BaseService
 from .block import BlockService
 from .card import CardService
 from .roadmap import RoadMapService

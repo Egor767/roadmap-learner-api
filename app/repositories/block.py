@@ -7,6 +7,7 @@ from core.db import transaction_manager
 from core.handlers import repository_handler
 from core.types import BaseIdType
 from models import Block
+from repositories import BaseRepository
 from schemas.block import BlockInDB, BlockFilters
 
 
@@ -16,10 +17,7 @@ def map_to_schema(db_block: Optional[Block]) -> Optional[BlockInDB]:
     return
 
 
-class BlockRepository:
-    def __init__(self, session: AsyncSession):
-        self.session = session
-
+class BlockRepository(BaseRepository):
     @repository_handler
     async def get_all_blocks(self) -> List[BlockInDB]:
         stmt = select(Block)

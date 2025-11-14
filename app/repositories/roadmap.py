@@ -7,6 +7,7 @@ from core.db import transaction_manager
 from core.handlers import repository_handler
 from core.types import BaseIdType
 from models import Roadmap
+from repositories import BaseRepository
 from schemas.roadmap import RoadMapInDB, RoadMapFilters
 
 
@@ -16,10 +17,7 @@ def map_to_schema(db_user: Optional[Roadmap]) -> Optional[RoadMapInDB]:
     return
 
 
-class RoadmapRepository:
-    def __init__(self, session: AsyncSession):
-        self.session = session
-
+class RoadmapRepository(BaseRepository):
     @repository_handler
     async def get_all_roadmaps(self) -> List[RoadMapInDB]:
         stmt = select(Roadmap)

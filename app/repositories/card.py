@@ -7,6 +7,7 @@ from core.db import transaction_manager
 from core.handlers import repository_handler
 from core.types import BaseIdType
 from models import Card
+from repositories import BaseRepository
 from schemas.card import CardInDB, CardFilters
 
 
@@ -16,10 +17,7 @@ def map_to_schema(db_card: Optional[Card]) -> Optional[CardInDB]:
     return
 
 
-class CardRepository:
-    def __init__(self, session: AsyncSession):
-        self.session = session
-
+class CardRepository(BaseRepository):
     @repository_handler
     async def get_all_cards(self) -> List[CardInDB]:
         stmt = select(Card)

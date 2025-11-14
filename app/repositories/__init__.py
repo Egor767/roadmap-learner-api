@@ -1,4 +1,5 @@
 __all__ = (
+    "BaseRepository",
     "UserRepository",
     "RoadmapRepository",
     "BlockRepository",
@@ -6,6 +7,7 @@ __all__ = (
     "SessionManagerRepository",
 )
 
+from .base import BaseRepository
 from .block import BlockRepository
 from .card import CardRepository
 from .roadmap import RoadmapRepository

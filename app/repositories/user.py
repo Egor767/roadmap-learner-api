@@ -7,6 +7,7 @@ from core.db import transaction_manager
 from core.handlers import repository_handler
 from core.types import BaseIdType
 from models import User
+from repositories import BaseRepository
 from schemas.user import UserInDB, UserFilters
 
 
@@ -16,10 +17,7 @@ def map_to_schema(db_user: Optional[User]) -> Optional[UserInDB]:
     return
 
 
-class UserRepository:
-    def __init__(self, session: AsyncSession):
-        self.session = session
-
+class UserRepository(BaseRepository):
     @repository_handler
     async def get_all_users(self) -> List[UserInDB]:
         stmt = select(User)

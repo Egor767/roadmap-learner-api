@@ -7,6 +7,7 @@ from core.db import transaction_manager
 from core.handlers import repository_handler
 from core.types import BaseIdType
 from models.session_manager import Session
+from repositories import BaseRepository
 from schemas.card import CardStatus
 from schemas.session_manager import (
     SessionInDB,
@@ -23,10 +24,7 @@ def map_to_schema(db_session: Optional[Session]) -> Optional[SessionInDB]:
     return
 
 
-class SessionManagerRepository:
-    def __init__(self, session: AsyncSession):
-        self.session = session
-
+class SessionManagerRepository(BaseRepository):
     @repository_handler
     async def get_all_sessions(self) -> List[SessionInDB]:
         stmt = select(Session)
