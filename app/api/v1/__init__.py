@@ -16,8 +16,8 @@ from .card import (
 )
 from .roadmap import router as roadmap_router
 from .session_manager import router as session_manager_router
-from .users import router as users_router
-from .users_old import router as users_old_router
+from .fastapi_users import router as fastapi_users_router
+from .users_service import router as users_service_router
 
 http_bearer = HTTPBearer(auto_error=False)
 
@@ -26,9 +26,9 @@ router = APIRouter(
     dependencies=[Depends(http_bearer)],
 )
 router.include_router(auth_router)
-router.include_router(users_router)
+router.include_router(fastapi_users_router)
 
-router.include_router(users_old_router)
+router.include_router(users_service_router)
 router.include_router(roadmap_router)
 router.include_router(block_router)
 router.include_router(block_resource_router)

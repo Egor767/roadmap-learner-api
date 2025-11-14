@@ -1,7 +1,11 @@
 from typing import List, TYPE_CHECKING
 
-from fastapi_users_db_sqlalchemy import SQLAlchemyBaseUserTable, SQLAlchemyUserDatabase
-from sqlalchemy import String
+
+from fastapi_users_db_sqlalchemy import (
+    SQLAlchemyBaseUserTable,
+    SQLAlchemyUserDatabase as SQLAlchemyUserDatabaseGeneric,
+)
+from sqlalchemy import String, select
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.types import BaseIdType
@@ -13,6 +17,14 @@ if TYPE_CHECKING:
     from .session_manager import Session
     from .access_token import AccessToken
     from sqlalchemy.ext.asyncio import AsyncSession
+
+
+class SQLAlchemyUserDatabase(SQLAlchemyUserDatabaseGeneric):
+
+    async def get_users(self) -> list["User"]:
+        statement = select(User).order_by(User.id)
+        results = await self.session.scalars(statement)
+        return list(results.all())
 
 
 class User(IdMixin, TimestampMixin, Base, SQLAlchemyBaseUserTable[BaseIdType]):

@@ -11,7 +11,7 @@ from app.services import UserService
 
 router = APIRouter(
     prefix=settings.api.v1.users_service,
-    tags=["User Service"],
+    tags=["Users Service"],
 )
 
 

@@ -1,5 +1,9 @@
+from pathlib import Path
+
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 
 class DBConfig(BaseModel):
@@ -9,6 +13,7 @@ class DBConfig(BaseModel):
     password: str = "postgres"
     name: str = "roadmap"
     echo: bool = False
+    url_prefix: str = "postgresql+asyncpg"
 
     naming_convention: dict[str, str] = {
         "ix": "ix_%(column_0_label)s",
@@ -20,7 +25,7 @@ class DBConfig(BaseModel):
 
     @property
     def url(self) -> str:
-        return f"postgresql+asyncpg://{self.username}:{self.password}@{self.host}:{self.port}/{self.name}"
+        return f"{self.url_prefix}://{self.username}:{self.password}@{self.host}:{self.port}/{self.name}"
 
 
 class RunConfig(BaseModel):
@@ -47,10 +52,8 @@ class ApiPrefix(BaseModel):
 
     @property
     def bearer_token_url(self) -> str:
-        # api/v1/authentication/login
         parts = (self.prefix, self.v1.prefix, self.v1.auth, "/login")
         path = "".join(parts)
-        # return path[1:]
         return path.removeprefix("/")
 
 
@@ -63,8 +66,8 @@ class AccessToken(BaseModel):
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=(
-            ".env.template",
-            ".env",
+            BASE_DIR / ".env.template",
+            BASE_DIR / ".env",
         ),
         case_sensitive=False,
         env_nested_delimiter="__",
