@@ -19,7 +19,7 @@ class UserUpdate(schemas.BaseUserUpdate):
 
 
 class UserFilters(BaseModel):
-    email: Optional[EmailStr]
+    email: Optional[EmailStr] = None
     username: Optional[str] = None
     is_active: Optional[bool] = None
     is_verified: Optional[bool] = None

@@ -32,6 +32,18 @@ async def get_users_list(
     return [UserRead.model_validate(user) for user in users]
 
 
+@router.get(
+    "/filters",
+    response_model=List[UserRead],
+)
+@router_handler
+async def get_users_by_filters(
+    filters: UserFilters = Depends(),
+    user_service: UserService = Depends(get_user_service),
+):
+    return await user_service.get_users(filters)
+
+
 # /me
 # /{id}
 router.include_router(
@@ -40,15 +52,3 @@ router.include_router(
         UserUpdate,
     ),
 )
-
-
-@router.get(
-    "/filters",
-    response_model=List[UserRead],
-)
-@router_handler
-async def get_users_by_filters(
-    filters: UserFilters = Depends(get_user_filters),
-    user_service: UserService = Depends(get_user_service),
-):
-    return await user_service.get_users(filters)
