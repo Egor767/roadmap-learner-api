@@ -1,6 +1,5 @@
 from datetime import datetime
 from enum import Enum
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
 
@@ -16,7 +15,7 @@ class RoadmapCreate(BaseRoadmap):
     pass
 
 
-class RoadMapUpdate(BaseModel):
+class RoadmapUpdate(BaseModel):
     title: str | None = None
     description: str | None = None
     status: str | None = None
@@ -41,4 +40,4 @@ class RoadmapStatus(str, Enum):
 class RoadmapFilters(BaseModel):
     title: str | None = None
     description: str | None = None
-    status: str | None = None
+    status: RoadmapStatus | None = None

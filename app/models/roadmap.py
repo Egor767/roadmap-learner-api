@@ -13,10 +13,19 @@ if TYPE_CHECKING:
 class Roadmap(IdMixin, TimestampMixin, UserRelationMixin, Base):
     _user_back_populates = "roadmaps"
 
-    title: Mapped[str] = mapped_column(String(30), nullable=False)
+    title: Mapped[str] = mapped_column(
+        String(30),
+        nullable=False,
+    )
     description: Mapped[str] = mapped_column(String(100))
     status: Mapped[str] = mapped_column(
-        SQLEnum("draft", "active", "archived", name="roadmap_status"), default="draft"
+        SQLEnum(
+            "draft",
+            "active",
+            "archived",
+            name="roadmap_status",
+        ),
+        default="draft",
     )
 
     blocks: Mapped[List["Block"]] = relationship(back_populates="roadmap")
