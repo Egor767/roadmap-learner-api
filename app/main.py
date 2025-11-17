@@ -35,9 +35,9 @@ async def root():
     return RedirectResponse(url="/docs")
 
 
-@app.get("/main")
-async def main():
-    return "It's working"
+@app.get("/hello")
+async def hello():
+    return "Hello!"
 
 
 app.include_router(api_router)
