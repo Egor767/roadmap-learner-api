@@ -77,7 +77,7 @@ async def get_roadmap_block(
     roadmap_id: BaseIdType,  # query param
     block_id: BaseIdType,
     block_service: Annotated[
-        BlockService,
+        "BlockService",
         Depends(get_block_service),
     ],
 ):
@@ -100,7 +100,7 @@ async def create_block(
     roadmap_id: BaseIdType,  # query param
     block_data: BlockCreate,
     block_service: Annotated[
-        BlockService,
+        "BlockService",
         Depends(get_block_service),
     ],
 ):
@@ -119,7 +119,7 @@ async def delete_block(
     road_id: BaseIdType,  # query param
     block_id: BaseIdType,
     block_service: Annotated[
-        BlockService,
+        "BlockService",
         Depends(get_block_service),
     ],
 ):
@@ -142,7 +142,7 @@ async def update_block(
     block_id: BaseIdType,
     block_data: BlockUpdate,
     block_service: Annotated[
-        BlockService,
+        "BlockService",
         Depends(get_block_service),
     ],
 ):
@@ -170,7 +170,7 @@ async def get_block(
     user_id: BaseIdType,
     block_id: BaseIdType,
     block_service: Annotated[
-        BlockService,
+        "BlockService",
         Depends(get_block_service),
     ],
 ):

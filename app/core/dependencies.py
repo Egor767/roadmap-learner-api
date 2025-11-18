@@ -25,6 +25,7 @@ from services import (
     CardService,
     SessionManagerService,
     UserManager,
+    AccessService,
 )
 
 if TYPE_CHECKING:
@@ -45,13 +46,13 @@ async def get_access_tokens_db(
     )
 
 
-def get_database_strategy(
+async def get_database_strategy(
     access_token_db: Annotated[
         "AccessTokenDatabase[AccessToken]",
         Depends(get_access_tokens_db),
     ],
 ) -> DatabaseStrategy:
-    return DatabaseStrategy(
+    yield DatabaseStrategy(
         access_token_db,
         lifetime_seconds=settings.access_token.lifetime_seconds,
     )
@@ -80,17 +81,16 @@ async def get_user_repository(
         Depends(get_db_session),
     ],
 ) -> UserRepository:
-    return UserRepository(session)
+    yield UserRepository(session)
 
 
 async def get_user_service(
-    session: Annotated[
-        "AsyncSession",
-        Depends(get_db_session),
+    user_repo: Annotated[
+        UserRepository,
+        Depends(get_user_repository),
     ],
 ) -> UserService:
-    repo = UserRepository(session)
-    return UserService(repo)
+    yield UserService(user_repo)
 
 
 async def get_user_filters(
@@ -99,7 +99,7 @@ async def get_user_filters(
     is_active: Optional[bool] = Query(None),
     is_verified: Optional[bool] = Query(None),
 ) -> UserFilters:
-    return UserFilters(
+    yield UserFilters(
         email=email,
         username=username,
         is_active=is_active,
@@ -124,17 +124,16 @@ async def get_roadmap_repository(
         Depends(get_db_session),
     ],
 ) -> RoadmapRepository:
-    return RoadmapRepository(session)
+    yield RoadmapRepository(session)
 
 
 async def get_roadmap_service(
-    session: Annotated[
-        "AsyncSession",
-        Depends(get_db_session),
+    roadmap_repo: Annotated[
+        "RoadmapRepository",
+        Depends(get_roadmap_repository),
     ],
 ) -> RoadMapService:
-    repo = RoadmapRepository(session)
-    return RoadMapService(repo)
+    yield RoadMapService(roadmap_repo)
 
 
 # BLOCK
@@ -144,17 +143,16 @@ async def get_block_repository(
         Depends(get_db_session),
     ],
 ) -> BlockRepository:
-    return BlockRepository(session)
+    yield BlockRepository(session)
 
 
 async def get_block_service(
-    session: Annotated[
-        "AsyncSession",
-        Depends(get_db_session),
+    block_repo: Annotated[
+        "BlockRepository",
+        Depends(get_block_repository),
     ],
 ) -> BlockService:
-    repo = BlockRepository(session)
-    return BlockService(repo)
+    yield BlockService(block_repo)
 
 
 # CARD
@@ -164,17 +162,16 @@ async def get_card_repository(
         Depends(get_db_session),
     ],
 ) -> CardRepository:
-    return CardRepository(session)
+    yield CardRepository(session)
 
 
 async def get_card_service(
-    session: Annotated[
-        "AsyncSession",
-        Depends(get_db_session),
+    card_repo: Annotated[
+        "CardRepository",
+        Depends(get_card_repository),
     ],
 ) -> CardService:
-    repo = CardRepository(session)
-    return CardService(repo)
+    yield CardService(card_repo)
 
 
 # SESSION_MANAGER
@@ -184,14 +181,25 @@ async def get_session_manager_repository(
         Depends(get_db_session),
     ],
 ) -> SessionManagerRepository:
-    return SessionManagerRepository(session)
+    yield SessionManagerRepository(session)
 
 
 async def get_session_manager_service(
-    session: Annotated[
-        "AsyncSession",
-        Depends(get_db_session),
+    session_manager_repo: Annotated[
+        "SessionManagerRepository",
+        Depends(get_session_manager_repository),
     ],
 ) -> SessionManagerService:
-    repo = SessionManagerRepository(session)
-    return SessionManagerService(repo)
+    yield SessionManagerService(session_manager_repo)
+
+
+# Access
+async def get_access_service(
+    roadmap_repo: Annotated[
+        "RoadmapRepository",
+        Depends(get_roadmap_repository),
+    ],
+) -> AccessService:
+    yield AccessService(
+        roadmap_repo=roadmap_repo,
+    )
