@@ -17,7 +17,13 @@ class Block(IdMixin, TimestampMixin, RoadmapRelationMixin, Base):
     description: Mapped[str] = mapped_column(String(30))
     order_index: Mapped[int] = mapped_column(Integer, nullable=False)
     status: Mapped[str] = mapped_column(
-        SQLEnum("draft", "active", "archived", name="block_status"), default="draft"
+        SQLEnum(
+            "draft",
+            "active",
+            "archived",
+            name="block_status",
+        ),
+        default="draft",
     )
 
     cards: Mapped[List["Card"]] = relationship(back_populates="block")

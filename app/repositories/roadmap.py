@@ -1,5 +1,3 @@
-from typing import List, Optional
-
 from sqlalchemy import select, insert, update, delete
 
 from core.db import transaction_manager

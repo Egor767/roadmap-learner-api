@@ -1,13 +1,23 @@
-from typing import List, Annotated
+from typing import List, Annotated, TYPE_CHECKING
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends
 
+from core.authentication.fastapi_users import current_active_user
 from core.config import settings
 from core.dependencies import get_block_service
 from core.handlers import router_handler
 from core.types import BaseIdType
-from schemas.block import BlockResponse, BlockCreate, BlockUpdate, BlockFilters
-from services import BlockService
+from schemas.block import (
+    BlockRead,
+    BlockCreate,
+    BlockUpdate,
+    BlockFilters,
+)
+
+if TYPE_CHECKING:
+    from services import BlockService
+    from models import User
+
 
 router = APIRouter(
     prefix=settings.api.v1.blocks,
@@ -16,14 +26,13 @@ router = APIRouter(
 
 
 @router.get(
-    "/all",
-    response_model=List[BlockResponse],
-    status_code=status.HTTP_200_OK,
+    "",
+    response_model=list[BlockRead],
 )
 @router_handler
-async def get_all_blocks(
+async def get_blocks(
     block_service: Annotated[
-        BlockService,
+        "BlockService",
         Depends(get_block_service),
     ],
 ):
@@ -32,8 +41,35 @@ async def get_all_blocks(
 
 # -------------------------------------- GET ----------------------------------------------
 @router.get(
+    "/filters",
+    response_model=list[BlockRead],
+)
+@router_handler
+async def get_blocks(
+    roadmap_id: BaseIdType,
+    current_user: Annotated[
+        "User",
+        Depends(current_active_user),
+    ],
+    filters: Annotated[
+        BlockFilters,
+        Depends(),
+    ],
+    block_service: Annotated[
+        "BlockService",
+        Depends(get_block_service),
+    ],
+):
+    return await block_service.get_blocks(
+        current_user,
+        roadmap_id,
+        filters,
+    )
+
+
+@router.get(
     "/{block_id}",
-    response_model=BlockResponse,
+    response_model=BlockRead,
 )
 @router_handler
 async def get_roadmap_block(
@@ -52,34 +88,10 @@ async def get_roadmap_block(
     )
 
 
-@router.get(
-    "/",
-    response_model=List[BlockResponse],
-)
-@router_handler
-async def get_roadmap_blocks(
-    user_id: BaseIdType,  # = Depends(get_current_user)
-    roadmap_id: BaseIdType,  # query param
-    filters: Annotated[
-        BlockFilters,
-        Depends(),
-    ],
-    block_service: Annotated[
-        BlockService,
-        Depends(get_block_service),
-    ],
-):
-    return await block_service.get_roadmap_blocks(
-        user_id,
-        roadmap_id,
-        filters,
-    )
-
-
 # -------------------------------------- CREATE --------------------------------------
 @router.post(
     "/",
-    response_model=BlockResponse,
+    response_model=BlockRead,
     status_code=201,
 )
 @router_handler
@@ -121,7 +133,7 @@ async def delete_block(
 # -------------------------------------- UPDATE --------------------------------------
 @router.patch(
     "/{block_id}",
-    response_model=BlockResponse,
+    response_model=BlockRead,
 )
 @router_handler
 async def update_block(
@@ -151,7 +163,7 @@ resource_router = APIRouter(
 
 @resource_router.get(
     "/{block_id}",
-    response_model=BlockResponse,
+    response_model=BlockRead,
 )
 @router_handler
 async def get_block(
