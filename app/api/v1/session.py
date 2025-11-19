@@ -7,7 +7,7 @@ from core.config import settings
 from core.dependencies import get_session_manager_service
 from core.handlers import router_handler
 from core.types import BaseIdType
-from schemas.card import CardResponse
+from schemas.card import CardRead
 from schemas.session import (
     SessionResponse,
     SessionFilters,
@@ -79,7 +79,7 @@ async def get_user_sessions(
 
 @router.get(
     "/{session_id}/next-card",
-    response_model=CardResponse,
+    response_model=CardRead,
 )
 @router_handler
 async def get_next_card(

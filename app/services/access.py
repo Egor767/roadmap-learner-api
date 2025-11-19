@@ -23,13 +23,12 @@ class AccessService:
         user: User,
         roadmap: RoadmapRead,
     ) -> None:
-        if user.is_superuser:
+        if user.is_superuser or roadmap.user_id == user.id:
             return
 
-        if roadmap.user_id != user.id:
-            logger.error(
-                "Access denied to Roadmap(id=%r) for User(id=%r)",
-                roadmap.id,
-                user.id,
-            )
-            raise PermissionError("Access denied")
+        logger.error(
+            "Access denied to Roadmap(id=%r) for User(id=%r)",
+            roadmap.id,
+            user.id,
+        )
+        raise PermissionError("Access denied")

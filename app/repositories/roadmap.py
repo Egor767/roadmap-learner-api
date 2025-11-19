@@ -36,12 +36,17 @@ class RoadmapRepository(BaseRepository):
     ) -> list[RoadmapRead] | list[None]:
         stmt = select(Roadmap)
 
-        if filters.title:
-            stmt = stmt.where(Roadmap.title == filters.title)
-        if filters.description:
-            stmt = stmt.where(Roadmap.description == filters.description)
-        if filters.status:
-            stmt = stmt.where(Roadmap.status == filters.status)
+        # if filters.title:
+        #     stmt = stmt.where(Roadmap.title == filters.title)
+        # if filters.description:
+        #     stmt = stmt.where(Roadmap.description == filters.description)
+        # if filters.status:
+        #     stmt = stmt.where(Roadmap.status == filters.status)
+        for field_name, value in vars(filters).items():
+            if value is not None:
+                column = getattr(Roadmap, field_name, None)
+                if column is not None:
+                    stmt = stmt.where(column == value)
 
         result = await self.session.execute(stmt)
         db_roadmaps = result.scalars().all()

@@ -51,13 +51,7 @@ class RoadMapService:
             logger.error("Roadmap(id=%r) not found", roadmap_id)
             raise ValueError("Roadmap not found")
 
-        if not current_user.is_superuser and roadmap.user_id != current_user.id:
-            logger.error(
-                "Access to Roadmap(id=%r), for User(id=%r) denied",
-                roadmap_id,
-                current_user,
-            )
-            raise PermissionError("Access denied")
+        self.access.ensure_can_view_roadmap(current_user, roadmap)
 
         return roadmap
 
@@ -95,7 +89,11 @@ class RoadMapService:
 
         created_roadmap = await self.repo.create(roadmap_data)
         if not created_roadmap:
-            logger.error("Roadmap with params(%r) not created", roadmap_create_data)
+            logger.error(
+                "Roadmap with params(%r) for USer(id=%r) not created",
+                roadmap_create_data,
+                current_user.id,
+            )
             raise ValueError("Creation failed")
 
         return created_roadmap
@@ -111,17 +109,11 @@ class RoadMapService:
             logger.error("Roadmap(id=%r) not found", roadmap_id)
             raise ValueError("Roadmap not found")
 
-        if not current_user.is_superuser and roadmap.user_id != current_user.id:
-            logger.warning(
-                "Access denied to delete Roadmap(id=%r) by User(id=%r)",
-                roadmap_id,
-                current_user.id,
-            )
-            raise PermissionError("Access denied")
+        self.access.ensure_can_view_roadmap(current_user, roadmap)
 
         success = await self.repo.delete(roadmap_id)
         if success:
-            logger.info("Roadmap(id=%r)deleted successfully", roadmap_id)
+            logger.info("Roadmap(id=%r) was deleted successfully", roadmap_id)
         else:
             logger.error("Failed to delete Roadmap(id=%r)", roadmap_id)
             raise ValueError("Deletion failed")
@@ -140,20 +132,14 @@ class RoadMapService:
             logger.error("Roadmap(id=%r) not found", roadmap_id)
             raise ValueError("Roadmap not found")
 
-        if not current_user.is_superuser and roadmap.user_id != current_user.id:
-            logger.warning(
-                "Access denied to update Roadmap(id=%r) by User(id=%r)",
-                roadmap_id,
-                current_user.id,
-            )
-            raise PermissionError("Access denied")
+        self.access.ensure_can_view_roadmap(current_user, roadmap)
 
         roadmap_data = roadmap_update_data.model_dump(exclude_unset=True)
 
         updated_roadmap = await self.repo.update(roadmap_id, roadmap_data)
 
         if not updated_roadmap:
-            logger.warning("Failed to update Roadmap(id=%r)", roadmap_id)
+            logger.error("Failed to update Roadmap(id=%r)", roadmap_id)
             raise ValueError("Updating failed")
 
         return updated_roadmap

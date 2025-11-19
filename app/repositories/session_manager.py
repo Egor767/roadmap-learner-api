@@ -25,15 +25,17 @@ def map_to_schema(db_session: Optional[Session]) -> Optional[SessionInDB]:
 
 class SessionManagerRepository(BaseRepository):
     @repository_handler
-    async def get_all_sessions(self) -> List[SessionInDB]:
+    async def get_all(self) -> List[SessionInDB]:
         stmt = select(Session)
         result = await self.session.execute(stmt)
         db_sessions = result.scalars().all()
         return [map_to_schema(session) for session in db_sessions]
 
     @repository_handler
-    async def get_user_session(
-        self, user_id: BaseIdType, session_id: BaseIdType
+    async def get_by_id(
+        self,
+        user_id: BaseIdType,
+        session_id: BaseIdType,
     ) -> SessionInDB:
         stmt = select(Session).where(
             Session.id == session_id, Session.user_id == user_id
@@ -43,8 +45,10 @@ class SessionManagerRepository(BaseRepository):
         return map_to_schema(session)
 
     @repository_handler
-    async def get_user_sessions(
-        self, user_id: BaseIdType, filters: SessionFilters
+    async def get_by_filters(
+        self,
+        user_id: BaseIdType,
+        filters: SessionFilters,
     ) -> List[SessionInDB]:
         stmt = select(Session).where(Session.user_id == user_id)
 
@@ -62,7 +66,7 @@ class SessionManagerRepository(BaseRepository):
         return [map_to_schema(session) for session in db_sessions]
 
     @repository_handler
-    async def create_session(self, session_create_data: SessionCreate) -> SessionInDB:
+    async def create(self, session_create_data: SessionCreate) -> SessionInDB:
         async with transaction_manager(self.session):
             stmt = insert(Session).values(**session_create_data).returning(Session)
             result = await self.session.execute(stmt)
@@ -156,7 +160,11 @@ class SessionManagerRepository(BaseRepository):
             return map_to_schema(updated_db_session)
 
     @repository_handler
-    async def delete_session(self, user_id: BaseIdType, session_id: BaseIdType) -> bool:
+    async def delete(
+        self,
+        user_id: BaseIdType,
+        session_id: BaseIdType,
+    ) -> bool:
         async with transaction_manager(self.session):
             stmt = delete(Session).where(
                 Session.id == session_id, Session.user_id == user_id

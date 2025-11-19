@@ -41,6 +41,8 @@ class BaseRepository(ABC):
 
     @abstractmethod
     async def update(
-        self, object_id: BaseIdType, update_data: BaseModel
+        self,
+        object_id: BaseIdType,
+        update_data: BaseModel,
     ) -> BaseModel | None:
         pass

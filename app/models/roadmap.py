@@ -17,7 +17,10 @@ class Roadmap(IdMixin, TimestampMixin, UserRelationMixin, Base):
         String(30),
         nullable=False,
     )
-    description: Mapped[str] = mapped_column(String(100))
+    description: Mapped[str] = mapped_column(
+        String(100),
+        nullable=True,
+    )
     status: Mapped[str] = mapped_column(
         SQLEnum(
             "draft",

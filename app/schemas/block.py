@@ -23,9 +23,7 @@ class BlockStatus(str, Enum):
     ARCHIVED = "archived"
 
 
-class BlockUpdate(BaseModel):
-    title: str | None = None
-    description: str | None = None
+class BlockUpdate(BaseBlock):
     status: BlockStatus | None = None
     order_index: int | None = None
     roadmap_id: BaseIdType | None = None
