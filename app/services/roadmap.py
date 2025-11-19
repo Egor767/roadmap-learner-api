@@ -21,14 +21,11 @@ class RoadMapService:
     @service_handler
     async def get_all_roadmaps(self) -> list[RoadmapRead]:
         roadmaps = await self.repo.get_all_roadmaps()
-        validated_roadmaps = [
-            RoadmapRead.model_validate(roadmap) for roadmap in roadmaps
-        ]
         logger.info(
             "Successful get all roadmaps, count: %r",
-            len(validated_roadmaps),
+            len(roadmaps),
         )
-        return validated_roadmaps
+        return roadmaps
 
     @service_handler
     async def get_roadmap(

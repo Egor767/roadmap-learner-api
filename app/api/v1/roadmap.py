@@ -5,7 +5,7 @@ from starlette import status
 
 from core.authentication.fastapi_users import current_active_user
 from core.config import settings
-from core.dependencies import get_roadmap_service
+from core.dependencies import get_roadmap_service, get_access_service
 from core.handlers import router_handler
 from core.types import BaseIdType
 from schemas.roadmap import (
@@ -16,7 +16,7 @@ from schemas.roadmap import (
 )
 
 if TYPE_CHECKING:
-    from services import RoadMapService
+    from services import RoadMapService, AccessService
     from models import User
 
 router = APIRouter(
@@ -79,7 +79,12 @@ async def get_roadmap(
         "RoadMapService",
         Depends(get_roadmap_service),
     ],
+    access_service: Annotated["AccessService", Depends(get_access_service)],
 ):
+    await access_service.ensure_user_can_access_roadmap(
+        current_user,
+        roadmap_id,
+    )
     return await roadmap_service.get_roadmap(
         current_user,
         roadmap_id,

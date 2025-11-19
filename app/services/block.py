@@ -3,8 +3,15 @@ from typing import List
 from core.handlers import service_handler
 from core.logging import block_service_logger as logger
 from core.types import BaseIdType
+from models import User
+from repositories import RoadmapRepository
 from repositories.block import BlockRepository
-from schemas.block import BlockCreate, BlockResponse, BlockUpdate, BlockFilters
+from schemas.block import (
+    BlockCreate,
+    BlockRead,
+    BlockUpdate,
+    BlockFilters,
+)
 from shared.generate_id import generate_base_id
 
 
@@ -13,23 +20,25 @@ class BlockService:
         self.repo = repo
 
     @service_handler
-    async def get_all_blocks(self) -> List[BlockResponse]:
+    async def get_all_blocks(self) -> list[BlockRead]:
         blocks = await self.repo.get_all_blocks()
-        validated_blocks = [BlockResponse.model_validate(block) for block in blocks]
         logger.info(
             "Successful get all blocks, count: %r",
-            len(validated_blocks),
+            len(blocks),
         )
-        return validated_blocks
+        return blocks
 
     @service_handler
-    async def get_roadmap_blocks(
-        self, user_id: BaseIdType, roadmap_id: BaseIdType, filters: BlockFilters
-    ) -> List[BlockResponse]:
+    async def get_blocks(
+        self,
+        current_user: User,
+        roadmap_id: BaseIdType,
+        filters: BlockFilters,
+    ) -> list[BlockRead]:
         # check roots
 
-        blocks = await self.repo.get_roadmap_blocks(roadmap_id, filters)
-        validated_blocks = [BlockResponse.model_validate(block) for block in blocks]
+        blocks = await self.repo.get_blocks(roadmap_id, filters)
+        validated_blocks = [BlockRead.model_validate(block) for block in blocks]
         logger.info(
             "Successful get roadmap blocks, count: %r",
             len(validated_blocks),
@@ -39,7 +48,7 @@ class BlockService:
     @service_handler
     async def get_roadmap_block(
         self, user_id: BaseIdType, roadmap_id: BaseIdType, block_id: BaseIdType
-    ) -> BlockResponse:
+    ) -> BlockRead:
         # check roots
 
         block = await self.repo.get_roadmap_block(roadmap_id, block_id)
@@ -47,12 +56,10 @@ class BlockService:
             logger.warning("Block(%r) not found or access denied", block_id)
             raise ValueError("Block not found or access denied")
         logger.info("Successful get roadmap block")
-        return BlockResponse.model_validate(block)
+        return BlockRead.model_validate(block)
 
     @service_handler
-    async def get_block(
-        self, user_id: BaseIdType, block_id: BaseIdType
-    ) -> BlockResponse:
+    async def get_block(self, user_id: BaseIdType, block_id: BaseIdType) -> BlockRead:
         # check roots
 
         block = await self.repo.get_block(block_id)
@@ -60,7 +67,7 @@ class BlockService:
             logger.warning("Block(%r) not found or access denied", block_id)
             raise ValueError("Block not found or access denied")
         logger.info("Successful get block")
-        return BlockResponse.model_validate(block)
+        return BlockRead.model_validate(block)
 
     @service_handler
     async def create_block(
@@ -68,7 +75,7 @@ class BlockService:
         user_id: BaseIdType,
         roadmap_id: BaseIdType,
         block_create_data: BlockCreate,
-    ) -> BlockResponse:
+    ) -> BlockRead:
         # check roots
 
         block_data = block_create_data.model_dump()
@@ -87,7 +94,7 @@ class BlockService:
             "Block created successfully: %r",
             created_block.id,
         )
-        return BlockResponse.model_validate(created_block)
+        return BlockRead.model_validate(created_block)
 
     @service_handler
     async def delete_block(
@@ -109,7 +116,7 @@ class BlockService:
         roadmap_id: BaseIdType,
         block_id: BaseIdType,
         block_update_data: BlockUpdate,
-    ) -> BlockResponse:
+    ) -> BlockRead:
         # check roots
 
         block_data = block_update_data.model_dump(exclude_unset=True)
@@ -125,4 +132,4 @@ class BlockService:
             raise ValueError("Block not found or access denied")
 
         logger.info("Successful updating block: %r", block_id)
-        return BlockResponse.model_validate(updated_block)
+        return BlockRead.model_validate(updated_block)
