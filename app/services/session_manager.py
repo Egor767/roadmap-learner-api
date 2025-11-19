@@ -16,7 +16,7 @@ from schemas.session import (
     SessionResult,
     SubmitAnswerRequest,
 )
-from app.shared.generate_id import generate_base_id
+from shared.generate_id import generate_base_id
 
 
 class SessionManagerService:
