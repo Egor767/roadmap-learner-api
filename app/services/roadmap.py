@@ -27,13 +27,12 @@ class RoadmapService:
         self.access = access_service
 
     @service_handler
-    async def get_all_roadmaps(self) -> list["RoadmapRead"]:
+    async def get_all_roadmaps(self) -> list["RoadmapRead"] | list[None]:
 
         roadmaps = await self.repo.get_all()
-        logger.info(
-            "Successful get all roadmaps, count: %r",
-            len(roadmaps),
-        )
+        if not roadmaps:
+            logger.warning("Roadmaps not found in DB")
+            return []
 
         return roadmaps
 
@@ -48,7 +47,7 @@ class RoadmapService:
 
         if not roadmap:
             logger.error("Roadmap(id=%r) not found", roadmap_id)
-            raise ValueError("Roadmap not found")
+            raise ValueError("NOT_FOUND")
 
         await self.access.ensure_can_view_roadmap(current_user, roadmap)
 
@@ -95,7 +94,7 @@ class RoadmapService:
                 roadmap_create_data,
                 current_user.id,
             )
-            raise ValueError("Creation failed")
+            raise ValueError("OPERATION_FAILED")
 
         return created_roadmap
 
@@ -108,7 +107,7 @@ class RoadmapService:
         roadmap = await self.repo.get_by_id(roadmap_id)
         if not roadmap:
             logger.error("Roadmap(id=%r) not found", roadmap_id)
-            raise ValueError("Roadmap not found")
+            raise ValueError("NOT_FOUND")
 
         await self.access.ensure_can_view_roadmap(current_user, roadmap)
 
@@ -117,7 +116,7 @@ class RoadmapService:
             logger.info("Roadmap(id=%r) was deleted successfully", roadmap_id)
         else:
             logger.error("Failed to delete Roadmap(id=%r)", roadmap_id)
-            raise ValueError("Deletion failed")
+            raise ValueError("OPERATION_FAILED")
 
     @service_handler
     async def update_roadmap(
@@ -131,7 +130,7 @@ class RoadmapService:
 
         if not roadmap:
             logger.error("Roadmap(id=%r) not found", roadmap_id)
-            raise ValueError("Roadmap not found")
+            raise ValueError("NOT_FOUND")
 
         await self.access.ensure_can_view_roadmap(current_user, roadmap)
 
@@ -141,6 +140,6 @@ class RoadmapService:
 
         if not updated_roadmap:
             logger.error("Failed to update Roadmap(id=%r)", roadmap_id)
-            raise ValueError("Updating failed")
+            raise ValueError("OPERATION_FAILED")
 
         return updated_roadmap

@@ -22,15 +22,6 @@ if TYPE_CHECKING:
     from repositories import BlockRepository
 
 
-async def get_user_service(
-    user_repo: Annotated[
-        "UserRepository",
-        Depends(get_user_repository),
-    ],
-) -> UserService:
-    yield UserService(user_repo)
-
-
 async def get_access_service(
     roadmap_repo: Annotated[
         "RoadmapRepository",
@@ -38,6 +29,19 @@ async def get_access_service(
     ],
 ) -> AccessService:
     yield AccessService(roadmap_repo)
+
+
+async def get_user_service(
+    user_repo: Annotated[
+        "UserRepository",
+        Depends(get_user_repository),
+    ],
+    access_service: Annotated[
+        "AccessService",
+        Depends(get_access_service),
+    ],
+) -> UserService:
+    yield UserService(user_repo, access_service)
 
 
 async def get_roadmap_service(

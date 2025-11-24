@@ -36,12 +36,6 @@ class RoadmapRepository(BaseRepository):
     ) -> list[RoadmapRead] | list[None]:
         stmt = select(Roadmap)
 
-        # if filters.title:
-        #     stmt = stmt.where(Roadmap.title == filters.title)
-        # if filters.description:
-        #     stmt = stmt.where(Roadmap.description == filters.description)
-        # if filters.status:
-        #     stmt = stmt.where(Roadmap.status == filters.status)
         for field_name, value in vars(filters).items():
             if value is not None:
                 column = getattr(Roadmap, field_name, None)
@@ -65,7 +59,7 @@ class RoadmapRepository(BaseRepository):
         async with transaction_manager(self.session):
             stmt = delete(Roadmap).where(Roadmap.id == roadmap_id)
             result = await self.session.execute(stmt)
-            return result.rowcount > 0
+            return result.rowcount() > 0
 
     @repository_handler
     async def update(

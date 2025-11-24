@@ -5,6 +5,7 @@ from schemas.roadmap import RoadmapFilters
 
 if TYPE_CHECKING:
     from models import User
+    from schemas.user import UserRead
     from schemas.roadmap import RoadmapRead
     from repositories import RoadmapRepository
     from schemas.block import BlockRead
@@ -16,6 +17,17 @@ logger = logging.getLogger("AccessService-Logger")
 class AccessService:
     def __init__(self, roadmap_repo: "RoadmapRepository"):
         self.roadmap_repo = roadmap_repo
+
+    @staticmethod
+    async def filter_users_for_user(
+        user: "User",
+        users: list["UserRead"],
+    ) -> list["UserRead"]:
+
+        if user.is_superuser:
+            return users
+
+        return [u for u in users if u.id == user.id]
 
     @staticmethod
     async def filter_roadmaps_for_user(
@@ -41,7 +53,7 @@ class AccessService:
             roadmap.id,
             user.id,
         )
-        raise PermissionError("Access denied")
+        raise PermissionError("Forbidden")
 
     async def filter_blocks_for_user(
         self,
@@ -78,4 +90,4 @@ class AccessService:
             block.id,
             user.id,
         )
-        raise PermissionError(f"Access denied")
+        raise PermissionError(f"Forbidden")

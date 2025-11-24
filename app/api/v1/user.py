@@ -2,16 +2,16 @@ from typing import Annotated, TYPE_CHECKING
 
 from fastapi import APIRouter, Depends
 
-from core.authentication.fastapi_users import fastapi_users
+from core.authentication.fastapi_users import fastapi_users, current_active_user
 from core.config import settings
-from core.dependencies import get_users_db
 from core.dependencies.services import get_user_service
 from core.handlers import router_handler
 from schemas.user import UserRead, UserUpdate, UserFilters
-from services import UserService
+
 
 if TYPE_CHECKING:
-    from models.user import SQLAlchemyUserDatabase
+    from models import User
+    from services import UserService
 
 router = APIRouter(
     prefix=settings.api.v1.users,
@@ -25,13 +25,12 @@ router = APIRouter(
     response_model=list[UserRead],
 )
 async def get_users(
-    users_db: Annotated[
-        "SQLAlchemyUserDatabase",
-        Depends(get_users_db),
+    user_service: Annotated[
+        "UserService",
+        Depends(get_user_service),
     ],
-) -> list[UserRead]:
-    users = await users_db.get_users()
-    return [UserRead.model_validate(user) for user in users]
+):
+    return await user_service.get_all_users()
 
 
 @router.get(
@@ -45,12 +44,19 @@ async def get_users_by_filters(
         UserFilters,
         Depends(),
     ],
+    current_user: Annotated[
+        "User",
+        Depends(current_active_user),
+    ],
     user_service: Annotated[
-        UserService,
+        "UserService",
         Depends(get_user_service),
     ],
 ):
-    return await user_service.get_users_by_filters(filters)
+    return await user_service.get_users_by_filters(
+        current_user,
+        filters,
+    )
 
 
 # /me

@@ -20,20 +20,21 @@ def map_to_schema(db_user: User | None) -> UserRead | None:
 
 class UserRepository(BaseRepository):
     @repository_handler
-    async def get_all(self) -> list[UserRead]:
+    async def get_all(self) -> list[UserRead] | list[None]:
         stmt = select(User)
         result = await self.session.execute(stmt)
         users = result.scalars().all()
         return [map_to_schema(user) for user in users]
 
     @repository_handler
-    async def get_by_filters(self, filters: UserFilters) -> list[UserRead]:
+    async def get_by_filters(self, filters: UserFilters) -> list[UserRead] | list[None]:
         stmt = select(User)
 
-        if filters.email is not None:
-            stmt = stmt.where(User.email == filters.email)
-        if filters.username is not None:
-            stmt = stmt.where(User.username == filters.username)
+        for field_name, value in vars(filters).items():
+            if value is not None:
+                column = getattr(User, field_name, None)
+                if column is not None:
+                    stmt = stmt.where(column == value)
 
         result = await self.session.execute(stmt)
         users = result.scalars().all()

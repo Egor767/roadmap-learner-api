@@ -1,30 +1,54 @@
+from typing import TYPE_CHECKING
+
 from core.handlers import service_handler
 from core.logging import user_service_logger as logger
 from repositories import UserRepository
 from schemas.user import UserRead, UserFilters
 
 
+if TYPE_CHECKING:
+    from models import User
+    from services import AccessService
+
+
 class UserService:
-    def __init__(self, repo: UserRepository):
+    def __init__(
+        self,
+        repo: UserRepository,
+        access_service: "AccessService",
+    ):
         self.repo = repo
+        self.access = access_service
 
     @service_handler
-    async def get_all_users(self) -> list[UserRead]:
+    async def get_all_users(self) -> list[UserRead] | list[None]:
         users = await self.repo.get_all()
-        validated_users = [UserRead.model_validate(user) for user in users]
-        logger.info(
-            "Successful get all users, count: %r",
-            len(validated_users),
-        )
-        return validated_users
+
+        if not users:
+            logger.warning("Users not found in DB")
+            return []
+
+        return users
 
     @service_handler
-    async def get_users_by_filters(self, filters: UserFilters) -> list[UserRead]:
+    async def get_users_by_filters(
+        self,
+        current_user: "User",
+        filters: UserFilters,
+    ) -> list[UserRead] | list[None]:
         users = await self.repo.get_by_filters(filters)
-        validated_users = [UserRead.model_validate(user) for user in users]
-        logger.info(
-            "Retrieved %r users with filters: %r",
-            len(validated_users),
-            filters,
+
+        if not users:
+            logger.warning("Users with filters(%r) not found", filters)
+            return []
+            # or:
+            # logger.error("Roadmaps with filters(%r) not found", filters)
+            # raise ValueError("Roadmaps not found")
+            # and current_func() -> list[RoadmapRead]
+
+        filtered_users = await self.access.filter_users_for_user(
+            current_user,
+            users,
         )
-        return validated_users
+
+        return filtered_users

@@ -57,7 +57,7 @@ class ApiPrefix(BaseModel):
 
 
 class AccessToken(BaseModel):
-    lifetime_seconds: int = 3600
+    lifetime_seconds: int = 36000
     reset_password_token_secret: str
     verification_token_secret: str
 
