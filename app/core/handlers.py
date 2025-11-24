@@ -67,6 +67,19 @@ def repository_handler(func):
     async def wrapper(*args, **kwargs):
         try:
             return await func(*args, **kwargs)
+        except IntegrityError as e:
+            # Проверяем, что это именно нарушение FK
+            if isinstance(e.orig, ForeignKeyViolationError):
+                logger.error(
+                    f"ForeignKey violation in {func.__name__}: {str(e)}",
+                    exc_info=True,
+                )
+                raise ValueError("FOREIGN_KEY_VIOLATION") from e
+            logger.error(
+                f"IntegrityError in {func.__name__}: {str(e)}",
+                exc_info=True,
+            )
+            raise
         except SQLAlchemyError as e:
             logger.error(
                 f"Database error in {func.__name__}: {str(e)}",

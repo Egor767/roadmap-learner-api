@@ -53,11 +53,11 @@ class BlockRepository(BaseRepository):
     @repository_handler
     async def get_by_filters(
         self,
-        filters: BlockFilters,
+        filters: dict,
     ) -> list[BlockRead] | list[None]:
         stmt = select(Block)
 
-        for field_name, value in vars(filters).items():
+        for field_name, value in filters.items():
             if value is not None:
                 column = getattr(Block, field_name, None)
                 if column is not None:
@@ -65,7 +65,6 @@ class BlockRepository(BaseRepository):
 
         result = await self.session.execute(stmt)
         db_blocks = result.scalars().all()
-
         return [map_to_schema(block) for block in db_blocks]
 
     @repository_handler
@@ -79,20 +78,10 @@ class BlockRepository(BaseRepository):
             return map_to_schema(db_block)
 
     @repository_handler
-    async def delete(
-        self,
-        roadmap_id: BaseIdType,
-        block_id: BaseIdType,
-    ) -> bool:
+    async def delete(self, block_id: BaseIdType) -> bool:
         async with transaction_manager(self.session):
-            stmt = (
-                delete(Block)
-                .where(Block.id == block_id)
-                .where(Block.roadmap_id == roadmap_id)
-            )
-
+            stmt = delete(Block).where(Block.id == block_id)
             result = await self.session.execute(stmt)
-
             return result.rowcount > 0
 
     @repository_handler
@@ -100,7 +89,7 @@ class BlockRepository(BaseRepository):
         self,
         block_id: BaseIdType,
         block_data: dict,
-    ) -> BlockRead:
+    ) -> BlockRead | None:
         async with transaction_manager(self.session):
             stmt = (
                 update(Block)
@@ -108,8 +97,6 @@ class BlockRepository(BaseRepository):
                 .values(**block_data)
                 .returning(Block)
             )
-
             result = await self.session.execute(stmt)
             db_roadmap = result.scalar_one_or_none()
-
             return map_to_schema(db_roadmap)
