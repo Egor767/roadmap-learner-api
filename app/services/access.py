@@ -1,8 +1,6 @@
 import logging
 from typing import TYPE_CHECKING
 
-from app.schemas.roadmap import RoadmapFilters
-
 if TYPE_CHECKING:
     from app.models import User
     from app.schemas.user import UserRead
@@ -45,6 +43,7 @@ class AccessService:
         user: "User",
         roadmap: "RoadmapRead",
     ) -> None:
+
         if user.is_superuser or user.id == roadmap.user_id:
             return
 
@@ -63,8 +62,8 @@ class AccessService:
 
         if user.is_superuser:
             return blocks
-        # TODO не нравиться что передается RoadmapFilters() его можно было бы засунуть в TYPE_CHECKING если бы не это
-        allowed_roadmaps = await self.roadmap_repo.get_by_filters(RoadmapFilters())
+
+        allowed_roadmaps = await self.roadmap_repo.get_by_filters(dict())
         allowed_roadmaps_owned = [
             rm for rm in allowed_roadmaps if rm.user_id == user.id
         ]
@@ -77,12 +76,13 @@ class AccessService:
         user: "User",
         block: "BlockRead",
     ) -> None:
+
         if user.is_superuser:
             return
 
-        roadmap = await self.roadmap_repo.get_by_id(block.roadmap_id)
+        target_roadmap = await self.roadmap_repo.get_by_id(block.roadmap_id)
 
-        if roadmap and roadmap.user_id == user.id:
+        if target_roadmap and target_roadmap.user_id == user.id:
             return
 
         logger.error(

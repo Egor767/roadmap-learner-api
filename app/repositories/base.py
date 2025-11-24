@@ -18,7 +18,7 @@ class BaseRepository(ABC):
         pass
 
     @abstractmethod
-    async def get_by_filters(self, filters: BaseModel) -> list[BaseModel] | list[None]:
+    async def get_by_filters(self, filters: dict) -> list[BaseModel] | list[None]:
         pass
 
     @abstractmethod
@@ -43,6 +43,6 @@ class BaseRepository(ABC):
     async def update(
         self,
         object_id: BaseIdType,
-        update_data: BaseModel,
+        update_data: dict,
     ) -> BaseModel | None:
         pass
