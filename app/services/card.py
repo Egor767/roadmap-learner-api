@@ -1,107 +1,125 @@
-from typing import List
+from typing import TYPE_CHECKING
 
-from core.handlers import service_handler
-from core.logging import card_service_logger as logger
-from core.types import BaseIdType
-from repositories import CardRepository
-from schemas.card import CardCreate, CardResponse, CardUpdate, CardFilters
-from shared.generate_id import generate_base_id
+from app.core.handlers import service_handler
+from app.core.logging import card_service_logger as logger
+from app.shared.generate_id import generate_base_id
+
+if TYPE_CHECKING:
+    from app.core.types import BaseIdType
+    from app.services import AccessService
+    from app.repositories import CardRepository
+    from app.models import User
+    from app.schemas.card import (
+        CardRead,
+        CardCreate,
+        CardUpdate,
+        CardFilters,
+    )
 
 
 class CardService:
-    def __init__(self, repo: CardRepository):
+    def __init__(
+        self,
+        repo: "CardRepository",
+        access_service: "AccessService",
+    ):
         self.repo = repo
+        self.access = access_service
 
     @service_handler
-    async def get_all_cards(self) -> List[CardResponse]:
-        cards = await self.repo.get_all_cards()
-        validated_cards = [CardResponse.model_validate(card) for card in cards]
-        logger.info(f"Successful get all cards, count: {len(validated_cards)}")
-        return validated_cards
+    async def get_all_cards(self) -> list["CardRead"] | list[None]:
+        cards = await self.repo.get_all()
+        if not cards:
+            logger.warning("Cards not found in DB")
+            return []
+
+        return cards
 
     @service_handler
-    async def get_card(self, user_id: BaseIdType, card_id: BaseIdType) -> CardResponse:
-        # check roots
+    async def get_cards_by_filters(
+        self,
+        current_user: "User",
+        filters: "CardFilters",
+    ) -> list["CardRead"] | list[None]:
+        filters_dict = filters.model_dump()
+        accessed_filters = await self.access.filter_cards_for_user(
+            current_user,
+            filters_dict,
+        )
 
-        card = await self.repo.get_card(card_id)
+        cards = await self.repo.get_by_filters(accessed_filters)
+        if not cards:
+            logger.warning("Cards with filters(%r) not found", filters)
+            return []
+
+        return cards
+
+    @service_handler
+    async def get_card_by_id(
+        self,
+        current_user: "User",
+        card_id: "BaseIdType",
+    ) -> "CardRead":
+        card = await self.repo.get_by_id(card_id)
         if not card:
-            logger.warning(f"Card not found or access denied")
-            raise ValueError("Card not found or access denied")
-        logger.info(f"Successful get card")
-        return CardResponse.model_validate(card)
+            logger.error(f"Card(%r) not found or access denied", card_id)
+            raise ValueError("NOT_FOUND")
 
-    @service_handler
-    async def get_block_cards(
-        self, user_id: BaseIdType, block_id: BaseIdType, filters: CardFilters
-    ) -> List[CardResponse]:
-        # check roots
+        await self.access.ensure_can_view_card(current_user, card.model_dump())
 
-        cards = await self.repo.get_block_cards(block_id, filters)
-        validated_cards = [CardResponse.model_validate(card) for card in cards]
-        logger.info(f"Successful get block cards, count: {len(validated_cards)}")
-        return validated_cards
-
-    @service_handler
-    async def get_block_card(
-        self, user_id: BaseIdType, block_id: BaseIdType, card_id: BaseIdType
-    ) -> CardResponse:
-        # check roots
-
-        card = await self.repo.get_block_card(block_id, card_id)
-        if not card:
-            logger.warning(f"Card not found or access denied")
-            raise ValueError("Card not found or access denied")
-        logger.info(f"Successful get block card")
-        return CardResponse.model_validate(card)
+        return card
 
     @service_handler
     async def create_card(
-        self, user_id: BaseIdType, block_id: BaseIdType, card_create_data: CardCreate
-    ) -> CardResponse:
-        # check roots
+        self,
+        current_user: "User",
+        card_create_data: "CardCreate",
+    ) -> "CardRead":
+        card_dict = card_create_data.model_dump()
+        card_dict["id"] = await generate_base_id()
 
-        card_data = card_create_data.model_dump()
-        card_data["block_id"] = block_id
-        card_data["id"] = await generate_base_id()
+        await self.access.ensure_can_view_card(current_user, card_dict)
 
-        logger.info(
-            f"Creating new card: {card_create_data.term} for block (block_id={card_data.get('block_id')}: {card_data.get('block_data')}"
-        )
-        created_card = await self.repo.create_card(card_data)
+        created_card = await self.repo.create(card_dict)
+        if not created_card:
+            logger.error(
+                "Card with params(%r) for User(id=%r) not created",
+                card_create_data,
+                current_user.id,
+            )
+            raise ValueError("OPERATION_FAILED")
 
-        logger.info(f"Card created successfully: {created_card.id}")
-        return CardResponse.model_validate(created_card)
+        return created_card
 
     @service_handler
     async def delete_card(
-        self, user_id: BaseIdType, block_id: BaseIdType, card_id: BaseIdType
-    ):
-        # check roots
+        self,
+        current_user: "User",
+        card_id: "BaseIdType",
+    ) -> None:
+        await self.get_card_by_id(current_user, card_id)
 
-        success = await self.repo.delete_card(block_id, card_id)
+        success = await self.repo.delete(card_id)
         if success:
-            logger.info(f"Card deleted successfully: {card_id}")
+            logger.info("Card deleted successfully: %r", card_id)
         else:
-            logger.warning(f"Card not found for deletion: {card_id}")
-        return success
+            logger.error("Deletion for Card(%r) FAILED", card_id)
+            raise ValueError("OPERATION_FAILED")
 
     @service_handler
     async def update_card(
         self,
-        user_id: BaseIdType,
-        block_id: BaseIdType,
-        card_id: BaseIdType,
-        card_update_data: CardUpdate,
-    ) -> CardResponse:
-        # check roots
+        current_user: "User",
+        card_id: "BaseIdType",
+        card_update_data: "CardUpdate",
+    ) -> "CardRead":
+        await self.get_card_by_id(current_user, card_id)
 
-        card_data = card_update_data.model_dump(exclude_unset=True)
-        logger.info(f"Updating card {card_id}: {card_data}")
-        updated_card = await self.repo.update_card(block_id, card_id, card_data)
+        card_dict = card_update_data.model_dump(exclude_unset=True)
 
+        updated_card = await self.repo.update(card_id, card_dict)
         if not updated_card:
-            logger.warning(f"Card not found for update: {card_id}")
-            raise ValueError("Card not found")
+            logger.warning("Failed to update Block(id=%r)", card_id)
+            raise ValueError("OPERATION_FAILED")
 
-        logger.info(f"Successful updating card: {card_id}")
-        return CardResponse.model_validate(updated_card)
+        return updated_card

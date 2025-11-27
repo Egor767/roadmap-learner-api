@@ -1,21 +1,27 @@
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from sqlalchemy import String, Integer, Enum as SQLEnum
-from sqlalchemy.orm import relationship, Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column
 
 from .base import Base
 from .mixins import RoadmapRelationMixin, TimestampMixin, IdMixin
 
 if TYPE_CHECKING:
-    from .card import Card
+    pass
 
 
 class Block(IdMixin, TimestampMixin, RoadmapRelationMixin, Base):
-    _roadmap_back_populates = "blocks"
+    # _roadmap_back_populates = "blocks"
 
-    title: Mapped[str] = mapped_column(String(30), nullable=False)
-    description: Mapped[str] = mapped_column(String(30))
-    order_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    title: Mapped[str] = mapped_column(
+        String(30),
+        nullable=False,
+    )
+    description: Mapped[str] = mapped_column(
+        String(100),
+        nullable=True,
+    )
+    order_index: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     status: Mapped[str] = mapped_column(
         SQLEnum(
             "draft",

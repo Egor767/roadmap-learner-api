@@ -2,21 +2,21 @@ from typing import List
 
 from fastapi import HTTPException
 
-from core.handlers import service_handler
-from core.logging import session_manager_service_logger as logger
-from core.types import BaseIdType
-from external.card_service import get_card_from_service
-from external.session_manager_service import calculate_session_stats
-from repositories import SessionManagerRepository
-from schemas.card import CardResponse
-from schemas.session import (
+from app.core.handlers import service_handler
+from app.core.logging import session_manager_service_logger as logger
+from app.core.types import BaseIdType
+from app.external.card_service import get_card_from_service
+from app.external.session_manager_service import calculate_session_stats
+from app.repositories import SessionManagerRepository
+from app.schemas.card import CardRead
+from app.schemas.session import (
     SessionResponse,
     SessionCreate,
     SessionFilters,
     SessionResult,
     SubmitAnswerRequest,
 )
-from shared.generate_id import generate_base_id
+from app.shared.generate_id import generate_base_id
 
 
 class SessionManagerService:
@@ -25,7 +25,7 @@ class SessionManagerService:
 
     @service_handler
     async def get_all_sessions(self) -> List[SessionResponse]:
-        sessions = await self.repo.get_all_sessions()
+        sessions = await self.repo.get_all()
         validated_sessions = [
             SessionResponse.model_validate(session) for session in sessions
         ]
@@ -39,7 +39,7 @@ class SessionManagerService:
     async def get_user_session(
         self, user_id: BaseIdType, session_id: BaseIdType
     ) -> SessionResponse:
-        session = await self.repo.get_user_session(user_id, session_id)
+        session = await self.repo.get_by_id(user_id, session_id)
         if not session:
             logger.warning("Session not found or access denied")
             raise ValueError("Session not found or access denied")
@@ -77,7 +77,7 @@ class SessionManagerService:
             session_create_data.mode,
             user_id,
         )
-        created_session = await self.repo.create_session(user_id, session_data)
+        created_session = await self.repo.create(user_id)
 
         logger.info(
             "Session created successfully: %r",
@@ -122,7 +122,7 @@ class SessionManagerService:
     @service_handler
     async def get_next_card(
         self, user_id: BaseIdType, session_id: BaseIdType
-    ) -> CardResponse:
+    ) -> CardRead:
         next_card_id = await self.repo.get_next_card_id(user_id, session_id)
 
         if not next_card_id:
@@ -135,7 +135,7 @@ class SessionManagerService:
         if not card_data:
             raise HTTPException(status_code=404, detail="Card not found")
 
-        return CardResponse.model_validate(card_data)
+        return CardRead.model_validate(card_data)
 
     @service_handler
     async def submit_answer(
@@ -162,7 +162,7 @@ class SessionManagerService:
     async def delete_session(self, user_id: BaseIdType, session_id: BaseIdType) -> bool:
         # check roots
 
-        success = await self.repo.delete_session(user_id, session_id)
+        success = await self.repo.delete(user_id, session_id)
         if success:
             logger.info("Session deleted successfully: %r", session_id)
         else:

@@ -3,21 +3,22 @@ from typing import Annotated, TYPE_CHECKING
 from fastapi import APIRouter, Depends
 from starlette import status
 
-from core.authentication.fastapi_users import current_active_user
-from core.config import settings
-from core.dependencies import get_roadmap_service, get_access_service
-from core.handlers import router_handler
-from core.types import BaseIdType
-from schemas.roadmap import (
+from app.core.authentication.fastapi_users import current_active_user
+from app.core.config import settings
+from app.core.dependencies.services import get_roadmap_service
+from app.core.handlers import router_handler
+from app.core.types import BaseIdType
+from app.schemas.roadmap import (
     RoadmapRead,
+    RoadmapCreate,
     RoadmapUpdate,
     RoadmapFilters,
-    RoadmapCreate,
 )
 
 if TYPE_CHECKING:
-    from services import RoadMapService, AccessService
-    from models import User
+    from app.services import RoadmapService
+    from app.models import User
+
 
 router = APIRouter(
     prefix=settings.api.v1.roadmaps,
@@ -27,23 +28,26 @@ router = APIRouter(
 
 @router.get(
     "",
+    name="roadmaps:all_roadmaps",
     response_model=list[RoadmapRead],
 )
 @router_handler
-async def get_roadmaps(
+async def get_all_roadmaps(
     roadmap_service: Annotated[
-        "RoadMapService",
+        "RoadmapService",
         Depends(get_roadmap_service),
     ],
-):
+) -> list[RoadmapRead]:
     return await roadmap_service.get_all_roadmaps()
 
 
 # -------------------------------------- GET ----------------------------------------------
 @router.get(
     "/filters",
+    name="roadmaps:filter_roadmaps",
     response_model=list[RoadmapRead],
 )
+@router_handler
 async def get_roadmaps(
     filters: Annotated[
         RoadmapFilters,
@@ -54,11 +58,11 @@ async def get_roadmaps(
         Depends(current_active_user),
     ],
     roadmap_service: Annotated[
-        "RoadMapService",
+        "RoadmapService",
         Depends(get_roadmap_service),
     ],
-):
-    return await roadmap_service.get_roadmaps(
+) -> list[RoadmapRead]:
+    return await roadmap_service.get_roadmaps_by_filters(
         current_user,
         filters,
     )
@@ -66,6 +70,7 @@ async def get_roadmaps(
 
 @router.get(
     "/{roadmap_id}",
+    name="roadmaps:roadmap",
     response_model=RoadmapRead,
 )
 @router_handler
@@ -76,16 +81,11 @@ async def get_roadmap(
         Depends(current_active_user),
     ],
     roadmap_service: Annotated[
-        "RoadMapService",
+        "RoadmapService",
         Depends(get_roadmap_service),
     ],
-    access_service: Annotated["AccessService", Depends(get_access_service)],
-):
-    await access_service.ensure_user_can_access_roadmap(
-        current_user,
-        roadmap_id,
-    )
-    return await roadmap_service.get_roadmap(
+) -> RoadmapRead:
+    return await roadmap_service.get_roadmap_by_id(
         current_user,
         roadmap_id,
     )
@@ -94,20 +94,21 @@ async def get_roadmap(
 # -------------------------------------- CREATE --------------------------------------
 @router.post(
     "/",
+    name="roadmaps:create_roadmap",
     response_model=RoadmapRead,
 )
 @router_handler
 async def create_roadmap(
+    roadmap_create_data: RoadmapCreate,
     current_user: Annotated[
         "User",
         Depends(current_active_user),
     ],
-    roadmap_create_data: RoadmapCreate,
     roadmap_service: Annotated[
-        "RoadMapService",
+        "RoadmapService",
         Depends(get_roadmap_service),
     ],
-):
+) -> RoadmapRead:
     return await roadmap_service.create_roadmap(
         current_user,
         roadmap_create_data,
@@ -117,6 +118,7 @@ async def create_roadmap(
 # -------------------------------------- DELETE --------------------------------------
 @router.delete(
     "/{roadmap_id}",
+    name="roadmaps:delete_roadmap",
     status_code=status.HTTP_204_NO_CONTENT,
 )
 @router_handler
@@ -127,10 +129,10 @@ async def delete_roadmap(
         Depends(current_active_user),
     ],
     roadmap_service: Annotated[
-        "RoadMapService",
+        "RoadmapService",
         Depends(get_roadmap_service),
     ],
-):
+) -> None:
     await roadmap_service.delete_roadmap(
         current_user,
         roadmap_id,
@@ -140,23 +142,24 @@ async def delete_roadmap(
 # -------------------------------------- UPDATE --------------------------------------
 @router.patch(
     "/{roadmap_id}",
+    name="roadmaps:path_roadmap",
     response_model=RoadmapRead,
 )
 @router_handler
 async def update_roadmap(
     roadmap_id: BaseIdType,
-    roadmap_data: RoadmapUpdate,
+    roadmap_update_data: RoadmapUpdate,
     current_user: Annotated[
         "User",
         Depends(current_active_user),
     ],
     roadmap_service: Annotated[
-        "RoadMapService",
+        "RoadmapService",
         Depends(get_roadmap_service),
     ],
-):
+) -> RoadmapRead:
     return await roadmap_service.update_roadmap(
         current_user,
         roadmap_id,
-        roadmap_data,
+        roadmap_update_data,
     )

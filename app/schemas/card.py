@@ -1,43 +1,20 @@
 from datetime import datetime
 from enum import Enum
-from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
-from core.types import BaseIdType
+from app.core.types import BaseIdType
 
 
-class CardCreate(BaseModel):
+class BaseCard(BaseModel):
     term: str
-    definition: Optional[str] = None
-    example: Optional[str]
-    comment: Optional[str] = None
+    definition: str
 
 
-class CardUpdate(BaseModel):
-    term: Optional[str] = None
-    definition: Optional[str] = None
-    example: Optional[str] = None
-    comment: Optional[str] = None
-    status: Optional[str] = None
-
-
-class CardInDB(BaseModel):
-    id: BaseIdType
+class CardCreate(BaseCard):
+    example: str | None = None
+    comment: str | None = None
     block_id: BaseIdType
-    term: str
-    definition: str = None
-    example: Optional[str]
-    comment: Optional[str]
-    status: str
-    created_at: datetime
-    updated_at: datetime
-
-    class Config:
-        from_attributes = True
-
-
-class CardResponse(CardInDB): ...
 
 
 class CardStatus(str, Enum):
@@ -46,9 +23,31 @@ class CardStatus(str, Enum):
     REVIEW = "review"
 
 
+class CardUpdate(BaseModel):
+    term: str | None = None
+    definition: str | None = None
+    example: str | None = None
+    comment: str | None = None
+    status: CardStatus | None = None
+    block_id: BaseIdType | None = None
+
+
+class CardRead(BaseCard):
+    id: BaseIdType
+    block_id: BaseIdType
+    example: str | None = None
+    comment: str | None = None
+    status: CardStatus
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class CardFilters(BaseModel):
-    term: Optional[str] = None
-    definition: Optional[str] = None
-    example: Optional[str] = None
-    comment: Optional[str] = None
-    status: Optional[CardStatus] = None
+    block_id: BaseIdType | None = None
+    term: str | None = None
+    definition: str | None = None
+    example: str | None = None
+    comment: str | None = None
+    status: CardStatus | None = None

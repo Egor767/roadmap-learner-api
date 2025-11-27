@@ -1,10 +1,9 @@
 from datetime import datetime
 from enum import Enum
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
 
-from core.types import BaseIdType
+from app.core.types import BaseIdType
 
 
 class BaseBlock(BaseModel):
@@ -42,8 +41,9 @@ class BlockRead(BaseBlock):
     model_config = ConfigDict(from_attributes=True)
 
 
-class BlockFilters:
+class BlockFilters(BaseModel):
+    roadmap_id: BaseIdType | None = None
     title: str | None = None
     description: str | None = None
     status: BlockStatus | None = None
-    roadmap_id: BaseIdType | None = None
+    order_index: int | None = None

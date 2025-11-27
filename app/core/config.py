@@ -40,7 +40,7 @@ class ApiV1Prefix(BaseModel):
     roadmaps: str = "/roadmaps"
     blocks: str = "/blocks"
     blocks_resource: str = "/blocks-resource"
-    cards: str = "/roadmaps/{roadmap_id}/blocks/{block_id}/cards"
+    cards: str = "/cards"
     cards_resource: str = "/cards"
     sessions: str = "/sessions"
 
@@ -57,7 +57,7 @@ class ApiPrefix(BaseModel):
 
 
 class AccessToken(BaseModel):
-    lifetime_seconds: int = 3600
+    lifetime_seconds: int = 36000
     reset_password_token_secret: str
     verification_token_secret: str
 

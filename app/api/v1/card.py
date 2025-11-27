@@ -1,13 +1,24 @@
-from typing import List, Annotated
+from typing import Annotated, TYPE_CHECKING
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends
+from starlette import status
 
-from core.config import settings
-from core.dependencies import get_card_service
-from core.handlers import router_handler
-from core.types import BaseIdType
-from schemas.card import CardResponse, CardCreate, CardUpdate, CardFilters
-from services import CardService
+from app.core.authentication.fastapi_users import current_active_user
+from app.core.config import settings
+from app.core.dependencies.services import get_card_service
+from app.core.handlers import router_handler
+from app.core.types import BaseIdType
+from app.schemas.card import (
+    CardRead,
+    CardCreate,
+    CardUpdate,
+    CardFilters,
+)
+
+if TYPE_CHECKING:
+    from app.services import CardService
+    from app.models import User
+
 
 router = APIRouter(
     prefix=settings.api.v1.cards,
@@ -16,138 +27,139 @@ router = APIRouter(
 
 
 @router.get(
-    "/all",
-    response_model=List[CardResponse],
-    status_code=status.HTTP_200_OK,
+    "",
+    name="cards:all_cards",
+    response_model=list[CardRead],
 )
 @router_handler
-async def get_all_blocks(
+async def get_all_cards(
     card_service: Annotated[
-        CardService,
+        "CardService",
         Depends(get_card_service),
     ],
-):
+) -> list[CardRead]:
     return await card_service.get_all_cards()
 
 
 # -------------------------------------- GET ----------------------------------------------
-@router.get("/{card_id}", response_model=CardResponse)
+@router.get(
+    "/filters",
+    name="cards:filter_cards",
+    response_model=list[CardRead],
+)
 @router_handler
-async def get_block_card(
-    user_id: BaseIdType,  # = Depends(get_current_user)
-    block_id: BaseIdType,  # query param
-    card_id: BaseIdType,
+async def get_cards(
+    filters: Annotated[
+        CardFilters,
+        Depends(),
+    ],
+    current_user: Annotated[
+        "User",
+        Depends(current_active_user),
+    ],
     card_service: Annotated[
-        CardService,
+        "CardService",
         Depends(get_card_service),
     ],
-):
-    return await card_service.get_block_card(
-        user_id,
-        block_id,
-        card_id,
+) -> list[CardRead]:
+    return await card_service.get_cards_by_filters(
+        current_user,
+        filters,
     )
 
 
-@router.get("/", response_model=List[CardResponse])
+@router.get(
+    "/{card_id}",
+    name="cards:card",
+    response_model=CardRead,
+)
 @router_handler
-async def get_block_cards(
-    user_id: BaseIdType,  # = Depends(get_current_user)
-    block_id: BaseIdType,  # query param
-    filters: Annotated[CardFilters, Depends()],
+async def get_card(
+    card_id: BaseIdType,
+    current_user: Annotated[
+        "User",
+        Depends(current_active_user),
+    ],
     card_service: Annotated[
-        CardService,
+        "CardService",
         Depends(get_card_service),
     ],
-):
-    return await card_service.get_block_cards(
-        user_id,
-        block_id,
-        filters,
+) -> CardRead:
+    return await card_service.get_card_by_id(
+        current_user,
+        card_id,
     )
 
 
 # -------------------------------------- CREATE --------------------------------------
 @router.post(
     "/",
-    response_model=CardResponse,
-    status_code=201,
+    name="cards:create_card",
+    response_model=CardRead,
 )
 @router_handler
 async def create_card(
-    user_id: BaseIdType,  # = Depends(get_current_user)
-    block_id: BaseIdType,  # query param
-    card_data: CardCreate,
-    card_service: Annotated[CardService, Depends(get_card_service)],
-):
+    card_create_data: CardCreate,
+    current_user: Annotated[
+        "User",
+        Depends(current_active_user),
+    ],
+    card_service: Annotated[
+        "CardService",
+        Depends(get_card_service),
+    ],
+) -> CardRead:
     return await card_service.create_card(
-        user_id,
-        block_id,
-        card_data,
+        current_user,
+        card_create_data,
     )
 
 
 # -------------------------------------- DELETE --------------------------------------
-@router.delete("/{card_id}", status_code=204)
+@router.delete(
+    "/{card_id}",
+    name="cards:delete_card",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
 @router_handler
 async def delete_card(
-    user_id: BaseIdType,  # = Depends(get_current_user)
-    block_id: BaseIdType,  # query param
     card_id: BaseIdType,
+    current_user: Annotated[
+        "User",
+        Depends(current_active_user),
+    ],
     card_service: Annotated[
-        CardService,
+        "CardService",
         Depends(get_card_service),
     ],
-):
+) -> None:
     await card_service.delete_card(
-        user_id,
-        block_id,
+        current_user,
         card_id,
     )
 
 
 # -------------------------------------- UPDATE --------------------------------------
-@router.patch("/{card_id}", response_model=CardResponse)
+@router.patch(
+    "/{card_id}",
+    name="cards:patch_card",
+    response_model=CardRead,
+)
 @router_handler
 async def update_card(
-    user_id: BaseIdType,  # = Depends(get_current_user)
-    block_id: BaseIdType,  # query param
     card_id: BaseIdType,
-    card_data: CardUpdate,
+    card_update_data: CardUpdate,
+    current_user: Annotated[
+        "User",
+        Depends(current_active_user),
+    ],
     card_service: Annotated[
-        CardService,
+        "CardService",
         Depends(get_card_service),
     ],
-):
+) -> CardRead:
     return await card_service.update_card(
-        user_id,
-        block_id,
+        current_user,
         card_id,
-        card_data,
-    )
-
-
-# -------------------------------------- RESOURCE ROUTER --------------------------------------
-resource_router = APIRouter(
-    prefix=settings.api.v1.cards_resource,
-    tags=["Cards Resources"],
-)
-
-
-@resource_router.get(
-    "/{card_id}",
-    response_model=CardResponse,
-)
-@router_handler
-async def get_card(
-    user_id: BaseIdType,
-    card_id: BaseIdType,
-    card_service: Annotated[
-        CardService,
-        Depends(get_card_service),
-    ],
-):
-    return await card_service.get_card(
-        user_id,
-        card_id,
+        card_update_data,
     )

@@ -3,19 +3,19 @@ from typing import List, Annotated
 from fastapi import APIRouter, Depends
 from starlette import status
 
-from core.config import settings
-from core.dependencies import get_session_manager_service
-from core.handlers import router_handler
-from core.types import BaseIdType
-from schemas.card import CardResponse
-from schemas.session import (
+from app.core.config import settings
+from app.core.dependencies.services import get_session_manager_service
+from app.core.handlers import router_handler
+from app.core.types import BaseIdType
+from app.schemas.card import CardRead
+from app.schemas.session import (
     SessionResponse,
     SessionFilters,
     SessionCreate,
     SessionResult,
     SubmitAnswerRequest,
 )
-from services import SessionManagerService
+from app.services import SessionManagerService
 
 router = APIRouter(
     prefix=settings.api.v1.sessions,
@@ -79,7 +79,7 @@ async def get_user_sessions(
 
 @router.get(
     "/{session_id}/next-card",
-    response_model=CardResponse,
+    response_model=CardRead,
 )
 @router_handler
 async def get_next_card(
