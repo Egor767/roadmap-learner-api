@@ -32,7 +32,7 @@ router = APIRouter(
     response_model=list[RoadmapRead],
 )
 @router_handler
-async def get_roadmaps(
+async def get_all_roadmaps(
     roadmap_service: Annotated[
         "RoadmapService",
         Depends(get_roadmap_service),

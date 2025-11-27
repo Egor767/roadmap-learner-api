@@ -38,6 +38,7 @@ class RoadmapRead(BaseRoadmap):
 
 
 class RoadmapFilters(BaseModel):
+    user_id: BaseIdType | None = None  # ХЗ ХЗ ХЗ
     title: str | None = None
     description: str | None = None
     status: RoadmapStatus | None = None

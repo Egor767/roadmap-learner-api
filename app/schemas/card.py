@@ -14,6 +14,7 @@ class BaseCard(BaseModel):
 class CardCreate(BaseCard):
     example: str | None = None
     comment: str | None = None
+    block_id: BaseIdType
 
 
 class CardStatus(str, Enum):
@@ -28,6 +29,7 @@ class CardUpdate(BaseModel):
     example: str | None = None
     comment: str | None = None
     status: CardStatus | None = None
+    block_id: BaseIdType | None = None
 
 
 class CardRead(BaseCard):
@@ -43,6 +45,7 @@ class CardRead(BaseCard):
 
 
 class CardFilters(BaseModel):
+    block_id: BaseIdType | None = None
     term: str | None = None
     definition: str | None = None
     example: str | None = None

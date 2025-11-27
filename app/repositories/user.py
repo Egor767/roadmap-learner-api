@@ -5,7 +5,6 @@ from sqlalchemy import select
 from app.core.handlers import repository_handler
 from app.models import User
 from app.repositories import BaseRepository
-from app.schemas.user import UserFilters
 from app.schemas.user import UserRead
 
 if TYPE_CHECKING:
@@ -27,10 +26,10 @@ class UserRepository(BaseRepository):
         return [map_to_schema(user) for user in users]
 
     @repository_handler
-    async def get_by_filters(self, filters: UserFilters) -> list[UserRead] | list[None]:
+    async def get_by_filters(self, filters: dict) -> list[UserRead] | list[None]:
         stmt = select(User)
 
-        for field_name, value in vars(filters).items():
+        for field_name, value in filters.items():
             if value is not None:
                 column = getattr(User, field_name, None)
                 if column is not None:

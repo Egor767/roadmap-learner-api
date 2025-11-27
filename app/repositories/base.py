@@ -1,12 +1,10 @@
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
-
 from pydantic import BaseModel
-
-from app.core.types import BaseIdType
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
+    from app.core.types import BaseIdType
 
 
 class BaseRepository(ABC):
@@ -22,7 +20,7 @@ class BaseRepository(ABC):
         pass
 
     @abstractmethod
-    async def get_by_id(self) -> BaseModel | None:
+    async def get_by_id(self, object_id: "BaseIdType") -> BaseModel | None:
         pass
 
     # @abstractmethod
@@ -36,13 +34,13 @@ class BaseRepository(ABC):
         pass
 
     @abstractmethod
-    async def delete(self, object_id: BaseIdType) -> bool:
+    async def delete(self, object_id: "BaseIdType") -> bool:
         pass
 
     @abstractmethod
     async def update(
         self,
-        object_id: BaseIdType,
+        object_id: "BaseIdType",
         update_data: dict,
     ) -> BaseModel | None:
         pass

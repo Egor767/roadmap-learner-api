@@ -40,7 +40,7 @@ class ApiV1Prefix(BaseModel):
     roadmaps: str = "/roadmaps"
     blocks: str = "/blocks"
     blocks_resource: str = "/blocks-resource"
-    cards: str = "/roadmaps/{roadmap_id}/blocks/{block_id}/cards"
+    cards: str = "/cards"
     cards_resource: str = "/cards"
     sessions: str = "/sessions"
 

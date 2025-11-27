@@ -1,8 +1,8 @@
 from typing import TYPE_CHECKING
 
-from app.shared.generate_id import generate_base_id
 from app.core.handlers import service_handler
 from app.core.logging import block_service_logger as logger
+from app.shared.generate_id import generate_base_id
 
 if TYPE_CHECKING:
     from app.core.types import BaseIdType
@@ -42,17 +42,17 @@ class BlockService:
         filters: "BlockFilters",
     ) -> list["BlockRead"] | list[None]:
         filters_dict = filters.model_dump()
-        blocks = await self.repo.get_by_filters(filters_dict)
+        accessed_filters = await self.access.filter_blocks_for_user(
+            current_user,
+            filters_dict,
+        )
+
+        blocks = await self.repo.get_by_filters(accessed_filters)
         if not blocks:
             logger.warning("Blocks with filters(%r) not found", filters)
             return []
 
-        filtered_blocks = await self.access.filter_blocks_for_user(
-            current_user,
-            blocks,
-        )
-
-        return filtered_blocks
+        return blocks
 
     @service_handler
     async def get_block_by_id(
@@ -60,13 +60,12 @@ class BlockService:
         current_user: "User",
         block_id: "BaseIdType",
     ) -> "BlockRead":
-
         block = await self.repo.get_by_id(block_id)
         if not block:
             logger.warning("Block(%r) not found", block_id)
             raise ValueError("NOT_FOUND")
 
-        await self.access.ensure_can_view_block(current_user, block)
+        await self.access.ensure_can_view_block(current_user, block.model_dump())
 
         return block
 
@@ -76,15 +75,16 @@ class BlockService:
         current_user: "User",
         block_create_data: "BlockCreate",
     ) -> "BlockRead":
-
         block_dict = block_create_data.model_dump()
         block_dict["id"] = await generate_base_id()
+
+        await self.access.ensure_can_view_block(current_user, block_dict)
 
         created_block = await self.repo.create(block_dict)
         if not created_block:
             logger.error(
                 "Block with params(%r) for User(id=%r) not created",
-                created_block,
+                block_create_data,
                 current_user.id,
             )
             raise ValueError("OPERATION_FAILED")
@@ -97,18 +97,13 @@ class BlockService:
         current_user: "User",
         block_id: "BaseIdType",
     ) -> None:
-        block = await self.repo.get_by_id(block_id)
-        if not block:
-            logger.error("Block(id=%r) not found", block_id)
-            raise ValueError("NOT_FOUND")
-
-        await self.access.ensure_can_view_block(current_user, block)
+        await self.get_block_by_id(current_user, block_id)
 
         success = await self.repo.delete(block_id)
         if success:
             logger.info("Block deleted successfully: %r", block_id)
         else:
-            logger.warning("Block not found for deletion: %r", block_id)
+            logger.error("Deletion for Block(%r) FAILED", block_id)
             raise ValueError("OPERATION_FAILED")
 
     @service_handler
@@ -118,16 +113,11 @@ class BlockService:
         block_id: "BaseIdType",
         block_update_data: "BlockUpdate",
     ) -> "BlockRead":
-        block = await self.repo.get_by_id(block_id)
-        if not block:
-            logger.error("Block(id=%r) not found", block_id)
-            raise ValueError("NOT_FOUND")
-
-        await self.access.ensure_can_view_block(current_user, block)
+        await self.get_block_by_id(current_user, block_id)
 
         block_dict = block_update_data.model_dump(exclude_unset=True)
-        updated_block = await self.repo.update(block_id, block_dict)
 
+        updated_block = await self.repo.update(block_id, block_dict)
         if not updated_block:
             logger.error("Failed to update Block(id=%r)", block_id)
             raise ValueError("OPERATION_FAILED")

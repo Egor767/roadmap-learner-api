@@ -5,7 +5,7 @@ from app.core.handlers import repository_handler
 from app.core.types import BaseIdType
 from app.models import Block
 from app.repositories import BaseRepository
-from app.schemas.block import BlockRead, BlockFilters
+from app.schemas.block import BlockRead
 
 
 def map_to_schema(db_block: Block | None) -> BlockRead | None:
@@ -18,37 +18,16 @@ class BlockRepository(BaseRepository):
     @repository_handler
     async def get_by_id(self, block_id: BaseIdType) -> BlockRead:
         stmt = select(Block).where(Block.id == block_id)
-
         result = await self.session.execute(stmt)
         db_block = result.scalar_one_or_none()
-
         return map_to_schema(db_block)
 
     @repository_handler
     async def get_all(self) -> list[BlockRead]:
         stmt = select(Block)
-
         result = await self.session.execute(stmt)
         db_blocks = result.scalars().all()
-
         return [map_to_schema(block) for block in db_blocks]
-
-    @repository_handler
-    async def get_by_parent(
-        self,
-        roadmap_id: BaseIdType,
-        block_id: BaseIdType,
-    ) -> BlockRead:
-        stmt = (
-            select(Block)
-            .where(Block.id == block_id)
-            .where(Block.roadmap_id == roadmap_id)
-        )
-
-        result = await self.session.execute(stmt)
-        block = result.scalar_one_or_none()
-
-        return map_to_schema(block)
 
     @repository_handler
     async def get_by_filters(
@@ -56,25 +35,24 @@ class BlockRepository(BaseRepository):
         filters: dict,
     ) -> list[BlockRead] | list[None]:
         stmt = select(Block)
-
         for field_name, value in filters.items():
             if value is not None:
                 column = getattr(Block, field_name, None)
                 if column is not None:
-                    stmt = stmt.where(column == value)
-
+                    if isinstance(value, list):
+                        stmt = stmt.where(column.in_(value))
+                    else:
+                        stmt = stmt.where(column == value)
         result = await self.session.execute(stmt)
         db_blocks = result.scalars().all()
         return [map_to_schema(block) for block in db_blocks]
 
     @repository_handler
-    async def create(self, block_data: dict) -> BlockRead:
+    async def create(self, block_data: dict) -> BlockRead | None:
         async with transaction_manager(self.session):
             stmt = insert(Block).values(**block_data).returning(Block)
-
             result = await self.session.execute(stmt)
             db_block = result.scalar_one_or_none()
-
             return map_to_schema(db_block)
 
     @repository_handler

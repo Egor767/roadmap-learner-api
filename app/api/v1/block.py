@@ -32,7 +32,7 @@ router = APIRouter(
     response_model=list[BlockRead],
 )
 @router_handler
-async def get_blocks(
+async def get_all_blocks(
     block_service: Annotated[
         "BlockService",
         Depends(get_block_service),
@@ -157,7 +157,7 @@ async def update_block(
         "BlockService",
         Depends(get_block_service),
     ],
-):
+) -> BlockRead:
     return await block_service.update_block(
         current_user,
         block_id,

@@ -1,8 +1,8 @@
 from typing import TYPE_CHECKING
 
-from app.shared.generate_id import generate_base_id
 from app.core.handlers import service_handler
 from app.core.logging import roadmap_service_logger as logger
+from app.shared.generate_id import generate_base_id
 
 if TYPE_CHECKING:
     from app.core.types import BaseIdType
@@ -42,17 +42,17 @@ class RoadmapService:
         filters: "RoadmapFilters",
     ) -> list["RoadmapRead"] | list[None]:
         filters_dict = filters.model_dump()
-        roadmaps = await self.repo.get_by_filters(filters_dict)
+        accessed_filters = await self.access.filter_roadmaps_for_user(
+            current_user,
+            filters_dict,
+        )
+
+        roadmaps = await self.repo.get_by_filters(accessed_filters)
         if not roadmaps:
             logger.warning("Roadmaps with filters(%r) not found", filters)
             return []
 
-        filtered_roadmaps = await self.access.filter_roadmaps_for_user(
-            current_user,
-            roadmaps,
-        )
-
-        return filtered_roadmaps
+        return roadmaps
 
     @service_handler
     async def get_roadmap_by_id(
@@ -60,13 +60,12 @@ class RoadmapService:
         current_user: "User",
         roadmap_id: "BaseIdType",
     ) -> "RoadmapRead":
-
         roadmap = await self.repo.get_by_id(roadmap_id)
         if not roadmap:
             logger.error("Roadmap(id=%r) not found", roadmap_id)
             raise ValueError("NOT_FOUND")
 
-        await self.access.ensure_can_view_roadmap(current_user, roadmap)
+        await self.access.ensure_can_view_roadmap(current_user, roadmap.model_dump())
 
         return roadmap
 
@@ -76,7 +75,6 @@ class RoadmapService:
         current_user: "User",
         roadmap_create_data: "RoadmapCreate",
     ) -> "RoadmapRead":
-
         roadmap_dict = roadmap_create_data.model_dump()
         roadmap_dict["user_id"] = current_user.id
         roadmap_dict["id"] = await generate_base_id()
@@ -98,12 +96,7 @@ class RoadmapService:
         current_user: "User",
         roadmap_id: "BaseIdType",
     ) -> None:
-        roadmap = await self.repo.get_by_id(roadmap_id)
-        if not roadmap:
-            logger.error("Roadmap(id=%r) not found", roadmap_id)
-            raise ValueError("NOT_FOUND")
-
-        await self.access.ensure_can_view_roadmap(current_user, roadmap)
+        await self.get_roadmap_by_id(current_user, roadmap_id)
 
         success = await self.repo.delete(roadmap_id)
         if success:
@@ -119,16 +112,11 @@ class RoadmapService:
         roadmap_id: "BaseIdType",
         roadmap_update_data: "RoadmapUpdate",
     ) -> "RoadmapRead":
-        roadmap = await self.repo.get_by_id(roadmap_id)
-        if not roadmap:
-            logger.error("Roadmap(id=%r) not found", roadmap_id)
-            raise ValueError("NOT_FOUND")
-
-        await self.access.ensure_can_view_roadmap(current_user, roadmap)
+        await self.get_roadmap_by_id(current_user, roadmap_id)
 
         roadmap_dict = roadmap_update_data.model_dump(exclude_unset=True)
-        updated_roadmap = await self.repo.update(roadmap_id, roadmap_dict)
 
+        updated_roadmap = await self.repo.update(roadmap_id, roadmap_dict)
         if not updated_roadmap:
             logger.error("Failed to update Roadmap(id=%r)", roadmap_id)
             raise ValueError("OPERATION_FAILED")

@@ -8,8 +8,8 @@ Create Date: 2025-11-24 15:27:28.022803
 
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
@@ -58,7 +58,9 @@ def upgrade() -> None:
         type_=sa.String(length=100),
         nullable=True,
     )
-    op.alter_column("roadmaps", "description", existing_type=sa.VARCHAR(length=100), nullable=True)
+    op.alter_column(
+        "roadmaps", "description", existing_type=sa.VARCHAR(length=100), nullable=True
+    )
     # ### end Alembic commands ###
 
 
@@ -123,12 +125,19 @@ def downgrade() -> None:
             autoincrement=False,
             nullable=True,
         ),
-        sa.Column("current_card_index", sa.INTEGER(), autoincrement=False, nullable=True),
+        sa.Column(
+            "current_card_index", sa.INTEGER(), autoincrement=False, nullable=True
+        ),
         sa.Column("correct_answers", sa.INTEGER(), autoincrement=False, nullable=True),
-        sa.Column("incorrect_answers", sa.INTEGER(), autoincrement=False, nullable=True),
+        sa.Column(
+            "incorrect_answers", sa.INTEGER(), autoincrement=False, nullable=True
+        ),
         sa.Column("review_answers", sa.INTEGER(), autoincrement=False, nullable=True),
         sa.Column(
-            "completed_at", postgresql.TIMESTAMP(timezone=True), autoincrement=False, nullable=True
+            "completed_at",
+            postgresql.TIMESTAMP(timezone=True),
+            autoincrement=False,
+            nullable=True,
         ),
         sa.Column(
             "created_at",
@@ -148,11 +157,15 @@ def downgrade() -> None:
         sa.Column("roadmap_id", sa.UUID(), autoincrement=False, nullable=False),
         sa.Column("block_id", sa.UUID(), autoincrement=False, nullable=True),
         sa.Column("id", sa.UUID(), autoincrement=False, nullable=False),
-        sa.ForeignKeyConstraint(["block_id"], ["blocks.id"], name=op.f("sessions_block_id_fkey")),
+        sa.ForeignKeyConstraint(
+            ["block_id"], ["blocks.id"], name=op.f("sessions_block_id_fkey")
+        ),
         sa.ForeignKeyConstraint(
             ["roadmap_id"], ["roadmaps.id"], name=op.f("sessions_roadmap_id_fkey")
         ),
-        sa.ForeignKeyConstraint(["user_id"], ["users.id"], name=op.f("sessions_user_id_fkey")),
+        sa.ForeignKeyConstraint(
+            ["user_id"], ["users.id"], name=op.f("sessions_user_id_fkey")
+        ),
         sa.PrimaryKeyConstraint("id", name=op.f("sessions_pkey")),
     )
     # ### end Alembic commands ###

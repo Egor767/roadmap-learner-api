@@ -5,7 +5,7 @@ from app.core.handlers import repository_handler
 from app.core.types import BaseIdType
 from app.models import Card
 from app.repositories import BaseRepository
-from app.schemas.card import CardRead, CardFilters
+from app.schemas.card import CardRead
 
 
 def map_to_schema(db_card: Card | None) -> CardRead | None:
@@ -30,35 +30,22 @@ class CardRepository(BaseRepository):
         return map_to_schema(card)
 
     @repository_handler
-    async def get_by_parent(
-        self,
-        block_id: BaseIdType,
-        card_id: BaseIdType,
-    ) -> CardRead | None:
-        stmt = select(Card).where(
-            Card.id == card_id,
-            Card.block_id == block_id,
-        )
-        result = await self.session.execute(stmt)
-        card = result.scalar_one_or_none()
-        return map_to_schema(card)
-
-    @repository_handler
     async def get_by_filters(
         self,
-        filters: CardFilters,
+        filters: dict,
     ) -> list[CardRead] | list[None]:
         stmt = select(Card)
-
-        for field_name, value in vars(filters).items():
+        for field_name, value in filters.items():
             if value is not None:
                 column = getattr(Card, field_name, None)
                 if column is not None:
-                    stmt = stmt.where(column == value)
-
+                    if isinstance(value, list):
+                        stmt = stmt.where(column.in_(value))
+                    else:
+                        stmt = stmt.where(column == value)
         result = await self.session.execute(stmt)
-        db_blocks = result.scalars().all()
-        return [map_to_schema(block) for block in db_blocks]
+        db_cards = result.scalars().all()
+        return [map_to_schema(card) for card in db_cards]
 
     @repository_handler
     async def create(self, card_data: dict) -> CardRead | None:

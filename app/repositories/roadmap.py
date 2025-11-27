@@ -5,7 +5,7 @@ from app.core.handlers import repository_handler
 from app.core.types import BaseIdType
 from app.models import Roadmap
 from app.repositories import BaseRepository
-from app.schemas.roadmap import RoadmapRead, RoadmapFilters
+from app.schemas.roadmap import RoadmapRead
 
 
 def map_to_schema(db_user: Roadmap | None) -> RoadmapRead | None:

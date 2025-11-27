@@ -5,19 +5,20 @@ from fastapi import Depends
 from app.services import AccessService, RoadmapService
 from app.services import BlockService, CardService, SessionManagerService, UserService
 from .repositories import (
+    get_user_repository,
+    get_roadmap_repository,
     get_block_repository,
     get_card_repository,
     get_session_manager_repository,
-    get_roadmap_repository,
-    get_user_repository,
 )
 
 if TYPE_CHECKING:
     from repositories import (
+        UserRepository,
         RoadmapRepository,
         CardRepository,
+        BlockRepository,
         SessionManagerRepository,
-        UserRepository,
     )
     from repositories import BlockRepository
 
@@ -27,8 +28,12 @@ async def get_access_service(
         "RoadmapRepository",
         Depends(get_roadmap_repository),
     ],
+    block_repo: Annotated[
+        "BlockRepository",
+        Depends(get_block_repository),
+    ],
 ) -> AccessService:
-    yield AccessService(roadmap_repo)
+    yield AccessService(roadmap_repo, block_repo)
 
 
 async def get_user_service(
@@ -75,8 +80,12 @@ async def get_card_service(
         "CardRepository",
         Depends(get_card_repository),
     ],
+    access_service: Annotated[
+        "AccessService",
+        Depends(get_access_service),
+    ],
 ) -> CardService:
-    yield CardService(repo)
+    yield CardService(repo, access_service)
 
 
 async def get_session_manager_service(
