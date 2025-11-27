@@ -57,7 +57,6 @@ async def get_users_by_filters(
         filters,
     )
 
-
 # /me
 # /{id}
 router.include_router(
