@@ -9,7 +9,7 @@ from app.models.session_manager import Session
 from app.repositories import BaseRepository
 from app.schemas.card import CardStatus
 from app.schemas.session import (
-    SessionInDB,
+    SessionRead,
     SessionCreate,
     SessionFilters,
     SessionStatus,
@@ -17,91 +17,85 @@ from app.schemas.session import (
 )
 
 
-def map_to_schema(db_session: Optional[Session]) -> Optional[SessionInDB]:
-    if db_session:
-        return SessionInDB.model_validate(db_session)
-    return
-
-
 class SessionManagerRepository(BaseRepository):
     @repository_handler
-    async def get_all(self) -> List[SessionInDB]:
+    async def get_all(self) -> list[Session]:
         stmt = select(Session)
         result = await self.session.execute(stmt)
-        db_sessions = result.scalars().all()
-        return [map_to_schema(session) for session in db_sessions]
+        sessions = list(result.scalars().all())
+        return sessions
 
     @repository_handler
-    async def get_by_id(
-        self,
-        user_id: BaseIdType,
-        session_id: BaseIdType,
-    ) -> SessionInDB:
-        stmt = select(Session).where(
-            Session.id == session_id, Session.user_id == user_id
-        )
+    async def get_by_id(self, session_id: "BaseIdType") -> Session | None:
+        stmt = select(Session).where(Session.id == session_id)
         result = await self.session.execute(stmt)
         session = result.scalar_one_or_none()
-        return map_to_schema(session)
+        return session
 
     @repository_handler
     async def get_by_filters(
         self,
-        user_id: BaseIdType,
-        filters: SessionFilters,
-    ) -> List[SessionInDB]:
+        user_id: "BaseIdType",
+        filters: dict,
+    ) -> list[Session]:
         stmt = select(Session).where(Session.user_id == user_id)
-
-        if filters.roadmap_id:
-            stmt = stmt.where(Session.roadmap_id == filters.roadmap_id)
-        if filters.block_id:
-            stmt = stmt.where(Session.block_id == filters.block_id)
-        if filters.mode:
-            stmt = stmt.where(Session.mode == filters.mode)
-        if filters.status:
-            stmt = stmt.where(Session.status == filters.status)
-
+        for field_name, value in filters.items():
+            if value is not None:
+                column = getattr(Session, field_name, None)
+                if column is not None:
+                    stmt = stmt.where(column == value)
         result = await self.session.execute(stmt)
-        db_sessions = result.scalars().all()
-        return [map_to_schema(session) for session in db_sessions]
+        sessions = list(result.scalars().all())
+        return sessions
 
     @repository_handler
-    async def create(self, session_create_data: SessionCreate) -> SessionInDB:
+    async def get_next_card_id(self, session_id: "BaseIdType") -> "BaseIdType" | None:
+        stmt = select(Session).where(Session.id == session_id)
+        result = await self.session.execute(stmt)
+        session = result.scalar_one_or_none()
+        next_card_id = session.card_queue[session.current_card_index]
+        if next_card_id:
+            return next_card_id
+        return
+
+    @repository_handler
+    async def create(self, session_create_data: dict) -> Session | None:
         async with transaction_manager(self.session):
             stmt = insert(Session).values(**session_create_data).returning(Session)
             result = await self.session.execute(stmt)
-            db_session = result.scalar_one_or_none()
-            return map_to_schema(db_session)
+            session = result.scalar_one_or_none()
+            return session
 
     @repository_handler
-    async def finish_session(
-        self, user_id: BaseIdType, session_id: BaseIdType
-    ) -> SessionInDB:
+    async def delete(self, session_id: "BaseIdType") -> bool:
+        async with transaction_manager(self.session):
+            stmt = delete(Session).where(Session.id == session_id)
+            result = await self.session.execute(stmt)
+            return result.rowcount > 0
+
+    @repository_handler
+    async def finish_session(self, session_id: "BaseIdType") -> Session:
         async with transaction_manager(self.session):
             stmt = (
                 update(Session)
                 .where(
                     Session.id == session_id,
-                    Session.user_id == user_id,
                     Session.status == SessionStatus.ACTIVE,
                 )
                 .values(status=SessionStatus.COMPLETED, completed_at=func.now())
                 .returning(Session)
             )
             result = await self.session.execute(stmt)
-            db_session = result.scalar_one_or_none()
-            return map_to_schema(db_session)
+            session = result.scalar_one_or_none()
+            return session
 
     @repository_handler
-    async def abandon_session(
-        self, user_id: BaseIdType, session_id: BaseIdType
-    ) -> bool:
+    async def abandon_session(self, session_id: "BaseIdType") -> bool:
         async with transaction_manager(self.session):
             stmt = (
                 update(Session)
                 .where(
                     Session.id == session_id,
-                    Session.user_id == user_id,
                     Session.status == SessionStatus.ACTIVE,
                 )
                 .values(status=SessionStatus.ABANDONED, completed_at=func.now())
@@ -110,64 +104,34 @@ class SessionManagerRepository(BaseRepository):
             return result.rowcount > 0
 
     @repository_handler
-    async def get_next_card_id(
-        self, user_id: BaseIdType, session_id: BaseIdType
-    ) -> Optional[BaseIdType]:
-        stmt = select(Session).where(
-            Session.id == session_id, Session.user_id == user_id
-        )
-        result = await self.session.execute(stmt)
-        db_session = result.scalar_one_or_none()
-        next_card_id = db_session.card_queue[db_session.current_card_index]
-        if next_card_id:
-            return next_card_id
-        return
-
-    @repository_handler
     async def submit_answer(
         self,
-        user_id: BaseIdType,
-        session_id: BaseIdType,
+        session_id: "BaseIdType",
         answer_data: SubmitAnswerRequest,
-    ) -> SessionInDB:
+    ) -> Session:
         async with transaction_manager(self.session):
-            stmt = select(Session).where(
-                Session.id == session_id, Session.user_id == user_id
-            )
+            stmt = select(Session).where(Session.id == session_id)
             result = await self.session.execute(stmt)
-            db_session = result.scalar_one_or_none()
+            session = result.scalar_one_or_none()
 
             update_data = {}
 
             if answer_data.answer == CardStatus.KNOWN:
-                update_data["correct_answers"] = db_session.correct_answers + 1
+                update_data["correct_answers"] = session.correct_answers + 1
             elif answer_data.answer == CardStatus.UNKNOWN:
-                update_data["incorrect_answers"] = db_session.incorrect_answers + 1
+                update_data["incorrect_answers"] = session.incorrect_answers + 1
             elif answer_data.answer == CardStatus.REVIEW:
-                update_data["review_answers"] = db_session.review_answers + 1
+                update_data["review_answers"] = session.review_answers + 1
 
-            update_data["current_card_index"] = db_session.current_card_index + 1
+            update_data["current_card_index"] = session.current_card_index + 1
 
             stmt = (
                 update(Session)
-                .where(Session.id == session_id, Session.user_id == user_id)
+                .where(Session.id == session_id)
                 .values(**update_data)
                 .returning(Session)
             )
 
             result = await self.session.execute(stmt)
-            updated_db_session = result.scalar_one_or_none()
-            return map_to_schema(updated_db_session)
-
-    @repository_handler
-    async def delete(
-        self,
-        user_id: BaseIdType,
-        session_id: BaseIdType,
-    ) -> bool:
-        async with transaction_manager(self.session):
-            stmt = delete(Session).where(
-                Session.id == session_id, Session.user_id == user_id
-            )
-            result = await self.session.execute(stmt)
-            return result.rowcount > 0
+            updated_session = result.scalar_one_or_none()
+            return updated_session

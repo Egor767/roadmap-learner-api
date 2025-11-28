@@ -47,11 +47,11 @@ class AccessService:
         user: "User",
         filters: dict,
     ) -> dict:
-
+        logger.info("filters = %r", filters)
         if user.is_superuser:
             return filters
 
-        if filters.get("user_id"):
+        if not filters.get("user_id"):
             filters["user_id"] = user.id
             return filters
 
@@ -117,7 +117,7 @@ class AccessService:
         allowed_roadmaps = await self.roadmap_repo.get_by_filters({"user_id": user.id})
         allowed_roadmaps_ids = [rm.id for rm in allowed_roadmaps]
 
-        if filters.get("roadmap_id") is None:
+        if not filters.get("roadmap_id"):
             filters["roadmap_id"] = allowed_roadmaps_ids
             return filters
 

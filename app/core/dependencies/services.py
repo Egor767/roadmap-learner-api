@@ -93,5 +93,9 @@ async def get_session_manager_service(
         "SessionManagerRepository",
         Depends(get_session_manager_repository),
     ],
+    access_service: Annotated[
+        "AccessService",
+        Depends(get_access_service),
+    ],
 ) -> SessionManagerService:
-    yield SessionManagerService(repo)
+    yield SessionManagerService(repo, access_service)

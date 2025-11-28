@@ -1,7 +1,7 @@
-from app.schemas.session import SessionInDB
+from app.schemas.session import SessionRead
 
 
-def calculate_session_stats(session: SessionInDB) -> dict:
+def calculate_session_stats(session: SessionRead) -> dict:
     total_answers = (
         session.correct_answers + session.incorrect_answers + session.review_answers
     )

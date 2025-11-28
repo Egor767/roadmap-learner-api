@@ -142,7 +142,7 @@ async def delete_roadmap(
 # -------------------------------------- UPDATE --------------------------------------
 @router.patch(
     "/{roadmap_id}",
-    name="roadmaps:path_roadmap",
+    name="roadmaps:patch_roadmap",
     response_model=RoadmapRead,
 )
 @router_handler

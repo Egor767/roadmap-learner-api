@@ -3,13 +3,14 @@ from datetime import datetime
 from enum import Enum
 from typing import Optional, List
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from app.core.types import BaseIdType
 from app.schemas.card import CardStatus
 
 
-class SessionSettings(BaseModel): ...
+class BaseSession(BaseModel):
+    roadmap_id: BaseIdType
 
 
 class SessionMode(str, Enum):
@@ -23,23 +24,28 @@ class SessionStatus(str, Enum):
     ABANDONED = "abandoned"
 
 
-class SessionCreate(BaseModel):
-    roadmap_id: BaseIdType
-    block_id: Optional[BaseIdType] = None
+class SessionCreate(BaseSession):
+    block_id: BaseIdType | None = None
     mode: SessionMode
-    settings: SessionSettings = SessionSettings()
 
 
-class SessionInDB(BaseModel):
+class SessionUpdate(BaseModel):
+    status: SessionStatus | None = None
+    current_card_index: int | None = None
+    correct_answers: int | None = None
+    incorrect_answers: int | None = None
+    review_answers: int | None = None
+
+
+class SessionRead(BaseSession):
     id: BaseIdType
     user_id: BaseIdType
-    roadmap_id: BaseIdType
-    block_id: Optional[BaseIdType] = None
+    block_id: BaseIdType | None = None
 
     mode: SessionMode
 
     status: SessionStatus
-    card_queue: List[BaseIdType] = []
+    card_queue: list[BaseIdType] = []
     current_card_index: int
 
     correct_answers: int
@@ -48,28 +54,17 @@ class SessionInDB(BaseModel):
 
     created_at: datetime
     updated_at: datetime
-    completed_at: Optional[datetime] = None
+    completed_at: datetime | None = None
 
-    class Config:
-        from_attributes = True
-
-
-class SessionResponse(SessionInDB): ...
-
-
-class SessionUpdate(BaseModel):
-    status: Optional[SessionStatus] = None
-    current_card_index: Optional[int] = None
-    correct_answers: Optional[int] = None
-    incorrect_answers: Optional[int] = None
-    review_answers: Optional[int] = None
+    model_config = ConfigDict(from_attributes=True)
 
 
 class SessionFilters(BaseModel):
-    roadmap_id: Optional[BaseIdType] = None
-    block_id: Optional[uuid.UUID] = None
-    mode: Optional[SessionMode] = None
-    status: Optional[SessionStatus] = None
+    user_id: BaseIdType | None = None
+    roadmap_id: BaseIdType | None = None
+    block_id: BaseIdType | None = None
+    mode: SessionMode | None = None
+    status: SessionStatus | None = None
 
 
 class SessionResult(BaseModel):

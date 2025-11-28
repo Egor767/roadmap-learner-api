@@ -1,21 +1,26 @@
-from typing import List, Annotated
+from typing import Annotated, TYPE_CHECKING
 
 from fastapi import APIRouter, Depends
 from starlette import status
 
+from app.core.authentication.fastapi_users import current_active_user
 from app.core.config import settings
 from app.core.dependencies.services import get_session_manager_service
 from app.core.handlers import router_handler
 from app.core.types import BaseIdType
 from app.schemas.card import CardRead
 from app.schemas.session import (
-    SessionResponse,
+    SessionRead,
     SessionFilters,
     SessionCreate,
     SessionResult,
     SubmitAnswerRequest,
 )
-from app.services import SessionManagerService
+
+if TYPE_CHECKING:
+    from app.services import SessionManagerService
+    from app.models import User
+
 
 router = APIRouter(
     prefix=settings.api.v1.sessions,
@@ -24,9 +29,9 @@ router = APIRouter(
 
 
 @router.get(
-    "/all",
-    response_model=List[SessionResponse],
-    status_code=status.HTTP_200_OK,
+    "",
+    name="sessions:all_sessions",
+    response_model=list[SessionRead],
 )
 @router_handler
 async def get_all_sessions(
@@ -34,46 +39,56 @@ async def get_all_sessions(
         SessionManagerService,
         Depends(get_session_manager_service),
     ],
-):
-    return await session_manager_service.get_all_sessions()
+) -> list[SessionRead]:
+    return await session_manager_service.get_all()
 
 
 # -------------------------------------- GET ----------------------------------------------
 @router.get(
-    "/{session_id}",
-    response_model=SessionResponse,
-    status_code=status.HTTP_200_OK,
+    "/filters",
+    name="sessions:filter_sessions",
+    response_model=list[SessionRead],
 )
-@router_handler
-async def get_user_session(
-    user_id: BaseIdType,
-    session_id: BaseIdType,
-    session_manager_service: Annotated[
-        SessionManagerService,
-        Depends(get_session_manager_service),
-    ],
-):
-    return await session_manager_service.get_user_session(
-        user_id,
-        session_id,
-    )
-
-
-@router.get("/", response_model=List[SessionResponse])
-async def get_user_sessions(
-    user_id: BaseIdType,  # = Depends(get_current_user)
+async def get_sessions(
     filters: Annotated[
         SessionFilters,
         Depends(),
     ],
+    current_user: Annotated[
+        "User",
+        Depends(current_active_user),
+    ],
     session_manager_service: Annotated[
         SessionManagerService,
         Depends(get_session_manager_service),
     ],
-):
-    return await session_manager_service.get_user_sessions(
-        user_id,
+) -> list[SessionRead]:
+    return await session_manager_service.get_by_filters(
+        current_user,
         filters,
+    )
+
+
+@router.get(
+    "/{session_id}",
+    name="sessions:session",
+    response_model=SessionRead,
+)
+@router_handler
+async def get_session(
+    session_id: BaseIdType,
+    current_user: Annotated[
+        "User",
+        Depends(current_active_user),
+    ],
+    session_manager_service: Annotated[
+        SessionManagerService,
+        Depends(get_session_manager_service),
+    ],
+) -> SessionRead:
+    return await session_manager_service.get_by_id(
+        current_user,
+        session_id,
     )
 
 
@@ -83,15 +98,18 @@ async def get_user_sessions(
 )
 @router_handler
 async def get_next_card(
-    user_id: BaseIdType,
     session_id: BaseIdType,
+    current_user: Annotated[
+        "User",
+        Depends(current_active_user),
+    ],
     session_manager_service: Annotated[
         SessionManagerService,
         Depends(get_session_manager_service),
     ],
 ):
     return await session_manager_service.get_next_card(
-        user_id,
+        current_user,
         session_id,
     )
 
@@ -99,104 +117,95 @@ async def get_next_card(
 # -------------------------------------- CREATE --------------------------------------
 @router.post(
     "/",
-    response_model=SessionResponse,
-    status_code=201,
+    name="sessions:create_session",
+    response_model=SessionRead,
 )
 @router_handler
 async def create_session(
-    user_id: BaseIdType,  # = Depends(get_current_user)
     session_create_data: SessionCreate,
+    current_user: Annotated[
+        "User",
+        Depends(current_active_user),
+    ],
     session_manager_service: Annotated[
         SessionManagerService,
         Depends(get_session_manager_service),
     ],
 ):
-    return await session_manager_service.create_session(
-        user_id,
+    return await session_manager_service.create(
+        current_user,
         session_create_data,
-    )
-
-
-# -------------------------------------- UPDATE --------------------------------------
-# finish session
-@router.patch(
-    "/{session_id}/finish",
-    response_model=SessionResult,
-)
-@router_handler
-async def finish_session(
-    user_id: BaseIdType,  # = Depends(get_current_user)
-    session_id: BaseIdType,
-    session_manager_service: Annotated[
-        SessionManagerService,
-        Depends(get_session_manager_service),
-    ],
-):
-    return await session_manager_service.finish_session(
-        user_id,
-        session_id,
-    )
-
-
-@router.patch(
-    "/{session_id}/abandon",
-    status_code=status.HTTP_200_OK,
-)
-@router_handler
-async def abandon_session(
-    user_id: BaseIdType,
-    session_id: BaseIdType,
-    session_manager_service: Annotated[
-        SessionManagerService,
-        Depends(get_session_manager_service),
-    ],
-):
-    success = await session_manager_service.abandon_session(
-        user_id,
-        session_id,
-    )
-    return {"successful": success}
-
-
-# submit answer
-@router.patch(
-    "/{session_id}/answer",
-    response_model=SessionResponse,
-)
-@router_handler
-async def submit_answer(
-    user_id: BaseIdType,
-    session_id: BaseIdType,
-    answer_data: SubmitAnswerRequest,
-    session_manager_service: Annotated[
-        SessionManagerService,
-        Depends(get_session_manager_service),
-    ],
-):
-    return await session_manager_service.submit_answer(
-        user_id,
-        session_id,
-        answer_data,
     )
 
 
 # -------------------------------------- DELETE --------------------------------------
 @router.delete(
     "/{session_id}",
+    name="sessions:delete_session",
     status_code=status.HTTP_204_NO_CONTENT,
 )
 @router_handler
 async def delete_block(
-    user_id: BaseIdType,  # = Depends(get_current_user)
     session_id: BaseIdType,
+    current_user: Annotated[
+        "User",
+        Depends(current_active_user),
+    ],
+    session_manager_service: Annotated[
+        SessionManagerService,
+        Depends(get_session_manager_service),
+    ],
+) -> None:
+    await session_manager_service.delete(
+        current_user,
+        session_id,
+    )
+
+
+# -------------------------------------- UPDATE --------------------------------------
+@router.patch(
+    "/{session_id}",
+    name="sessions:patch_session",
+    response_model=SessionRead,
+)
+@router_handler
+async def abandon_session(
+    session_id: BaseIdType,
+    current_user: Annotated[
+        "User",
+        Depends(current_active_user),
+    ],
+    session_manager_service: Annotated[
+        SessionManagerService,
+        Depends(get_session_manager_service),
+    ],
+) -> SessionRead:
+    return await session_manager_service.update(
+        current_user,
+        session_id,
+    )
+
+
+# submit answer
+@router.patch(
+    "/{session_id}/answer",
+    response_model=SessionRead,
+)
+@router_handler
+async def submit_answer(
+    session_id: BaseIdType,
+    answer_data: SubmitAnswerRequest,
+    current_user: Annotated[
+        "User",
+        Depends(current_active_user),
+    ],
     session_manager_service: Annotated[
         SessionManagerService,
         Depends(get_session_manager_service),
     ],
 ):
-    success = await session_manager_service.delete_session(
-        user_id,
+    return await session_manager_service.submit_answer(
+        current_user,
         session_id,
+        answer_data,
     )
-
-    return {"successful": success}
