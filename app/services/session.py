@@ -1,3 +1,4 @@
+from datetime import datetime
 import random
 from typing import TYPE_CHECKING
 
@@ -5,7 +6,7 @@ from app.core.handlers import service_handler
 from app.core.logging import session_manager_service_logger as logger
 from app.shared.generate_id import generate_base_id
 from app.utils.mappers.orm_to_models import session_orm_to_model
-from app.schemas.session import SessionMode
+from app.schemas.session import SessionMode, SessionStatus, SessionResult
 
 if TYPE_CHECKING:
     from app.core.types import BaseIdType
@@ -185,3 +186,47 @@ class SessionService:
         validated_updated_session = await session_orm_to_model(updated_session)
 
         return validated_updated_session
+
+    @service_handler
+    async def finish(
+        self,
+        current_user: "User",
+        session_id: "BaseIdType",
+    ) -> SessionResult:
+        await self.get_by_id(current_user, session_id)
+
+        update_data = {
+            "status": SessionStatus.COMPLETED,
+            "completed_at": datetime.now(),
+        }
+
+        updated_session = await self.repo.update(session_id, update_data)
+        if not updated_session:
+            logger.error("Failed to update Session(id=%r)", session_id)
+            raise ValueError("OPERATION_FAILED")
+
+        session = await session_orm_to_model(updated_session)
+
+        reviewed_answers = session.review_answers
+        cards_len = len(session.card_ids_queue)
+        accuracy = (
+            (session.correct_answers / reviewed_answers * 100)
+            if reviewed_answers != 0
+            else 0.0
+        )
+
+        result = SessionResult(
+            **session.model_dump(
+                exclude={
+                    "card_ids_queue",
+                    "current_card_index",
+                    "status",
+                    "created_at",
+                    "updated_at",
+                }
+            ),
+            total_cards=cards_len,
+            accuracy_percentage=accuracy,
+        )
+
+        return result

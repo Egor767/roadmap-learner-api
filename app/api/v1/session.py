@@ -184,3 +184,26 @@ async def update_session(
         session_id,
         session_update_data,
     )
+
+
+@router.patch(
+    "/{session_id}/finish",
+    name="sessions:finish_session",
+    response_model=SessionResult,
+)
+@router_handler
+async def finish_session(
+    session_id: BaseIdType,
+    current_user: Annotated[
+        "User",
+        Depends(current_active_user),
+    ],
+    session_service: Annotated[
+        "SessionService",
+        Depends(get_session_service),
+    ],
+) -> SessionResult:
+    return await session_service.finish(
+        current_user,
+        session_id,
+    )
