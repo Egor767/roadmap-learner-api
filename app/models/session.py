@@ -1,7 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum as SQLEnum
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import DateTime, Enum as SQLEnum, ARRAY, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .base import Base
@@ -9,9 +8,10 @@ from .mixins import (
     TimestampMixin,
     UserRelationMixin,
     RoadmapRelationMixin,
-    BlockRelationMixin,
     IdMixin,
 )
+
+from app.core.types import BaseIdType
 
 
 class Session(
@@ -19,7 +19,6 @@ class Session(
     TimestampMixin,
     UserRelationMixin,
     RoadmapRelationMixin,
-    BlockRelationMixin,
     Base,
 ):
     # _user_back_populates = "sessions"
@@ -36,6 +35,11 @@ class Session(
         nullable=False,
     )
 
+    block_id: Mapped[BaseIdType] = mapped_column(
+        UUID,
+        nullable=True,
+    )
+
     status: Mapped[str] = mapped_column(
         SQLEnum(
             "active",
@@ -46,10 +50,10 @@ class Session(
         default="active",
     )
 
-    card_queue: Mapped[list | None] = mapped_column(
-        JSONB,
-        default=list,
+    card_ids_queue: Mapped[list[BaseIdType] | None] = mapped_column(
+        ARRAY(UUID(as_uuid=True)),
         nullable=True,
+        default=list,
     )
 
     current_card_index: Mapped[int] = mapped_column(

@@ -3,7 +3,7 @@ from functools import wraps
 
 from fastapi import HTTPException
 from fastapi import status
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 
 logger = logging.getLogger(__name__)
 

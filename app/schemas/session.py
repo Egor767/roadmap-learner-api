@@ -1,16 +1,13 @@
-import uuid
 from datetime import datetime
 from enum import Enum
-from typing import Optional, List
 
 from pydantic import BaseModel, ConfigDict
 
 from app.core.types import BaseIdType
-from app.schemas.card import CardStatus
 
 
 class BaseSession(BaseModel):
-    roadmap_id: BaseIdType
+    pass
 
 
 class SessionMode(str, Enum):
@@ -25,8 +22,10 @@ class SessionStatus(str, Enum):
 
 
 class SessionCreate(BaseSession):
-    block_id: BaseIdType | None = None
     mode: SessionMode
+    roadmap_id: BaseIdType
+    block_id: BaseIdType | None = None
+    mix: bool | None = False
 
 
 class SessionUpdate(BaseModel):
@@ -40,12 +39,13 @@ class SessionUpdate(BaseModel):
 class SessionRead(BaseSession):
     id: BaseIdType
     user_id: BaseIdType
+    roadmap_id: BaseIdType
     block_id: BaseIdType | None = None
 
     mode: SessionMode
 
     status: SessionStatus
-    card_queue: list[BaseIdType] = []
+    card_ids_queue: list[BaseIdType] = []
     current_card_index: int
 
     correct_answers: int
@@ -61,9 +61,9 @@ class SessionRead(BaseSession):
 
 class SessionFilters(BaseModel):
     user_id: BaseIdType | None = None
+    mode: SessionMode | None = None
     roadmap_id: BaseIdType | None = None
     block_id: BaseIdType | None = None
-    mode: SessionMode | None = None
     status: SessionStatus | None = None
 
 
@@ -71,6 +71,7 @@ class SessionResult(BaseModel):
     id: BaseIdType
     user_id: BaseIdType
     roadmap_id: BaseIdType
+    block_id: BaseIdType | None = None
     mode: SessionMode
     total_cards: int
     correct_answers: int
@@ -78,8 +79,3 @@ class SessionResult(BaseModel):
     review_answers: int
     accuracy_percentage: float
     completed_at: datetime
-
-
-class SubmitAnswerRequest(BaseModel):
-    card_id: BaseIdType
-    answer: CardStatus

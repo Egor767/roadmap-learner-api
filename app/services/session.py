@@ -1,31 +1,29 @@
+import random
 from typing import TYPE_CHECKING
 
 from app.core.handlers import service_handler
 from app.core.logging import session_manager_service_logger as logger
 from app.shared.generate_id import generate_base_id
 from app.utils.mappers.orm_to_models import session_orm_to_model
-from app.external.card_service import get_card_from_service
-from app.external.session_manager_service import calculate_session_stats
+from app.schemas.session import SessionMode
 
 if TYPE_CHECKING:
     from app.core.types import BaseIdType
     from app.services import AccessService
-    from app.repositories import SessionManagerRepository
-    from app.schemas.card import CardRead
+    from app.repositories import SessionRepository
     from app.schemas.session import (
         SessionRead,
         SessionCreate,
         SessionFilters,
-        SessionResult,
-        SubmitAnswerRequest,
+        SessionUpdate,
     )
     from app.models import User
 
 
-class SessionManagerService:
+class SessionService:
     def __init__(
         self,
-        repo: "SessionManagerRepository",
+        repo: "SessionRepository",
         access_service: "AccessService",
     ):
         self.repo = repo
@@ -34,10 +32,9 @@ class SessionManagerService:
     @service_handler
     async def get_all(self) -> list["SessionRead"]:
         db_sessions = await self.repo.get_all()
-        logger.info(
-            "Successful get all sessions, count: %r",
-            len(db_sessions),
-        )
+        if not db_sessions:
+            logger.warning("Sessions not found in DB")
+            return []
 
         validated_sessions = [
             await session_orm_to_model(db_session) for db_session in db_sessions
@@ -76,14 +73,13 @@ class SessionManagerService:
         self,
         current_user: "User",
         session_id: "BaseIdType",
-    ) -> SessionRead:
+    ) -> "SessionRead":
         db_session = await self.repo.get_by_id(session_id)
         if not db_session:
             logger.error("Session(id=%r) not found", session_id)
             raise ValueError("NOT_FOUND")
 
         validated_session = await session_orm_to_model(db_session)
-
         await self.access.ensure_can_view_session(
             current_user, validated_session.model_dump()
         )
@@ -91,15 +87,56 @@ class SessionManagerService:
         return validated_session
 
     @service_handler
+    async def get_next_card_id(
+        self,
+        current_user: "User",
+        session_id: "BaseIdType",
+    ) -> "BaseIdType":
+        session = await self.get_by_id(current_user, session_id)
+
+        try:
+            next_card_id = session.card_ids_queue[session.current_card_index]
+        except (IndexError, TypeError, AttributeError) as e:
+            logger.warning(
+                "Next card access failed for session %r: queue=%r, index=%r, error=%r",
+                session_id,
+                getattr(session, "card_ids_queue", None),
+                getattr(session, "current_card_index", None),
+                e,
+            )
+            raise ValueError("Next card id not found or invalid session state") from e
+
+        await self.repo.update(
+            session.id,
+            {"current_card_index": session.current_card_index + 1},
+        )
+
+        return next_card_id
+
+    @service_handler
     async def create(
         self,
         current_user: "User",
         session_create_data: "SessionCreate",
     ) -> "SessionRead":
-        session_dict = session_create_data.model_dump()
-        del session_dict["settings"]
+        filters = session_create_data.model_dump(
+            exclude={"mode", "mix"}, exclude_none=True
+        )
+        if session_create_data.mode is SessionMode.REVIEW:
+            filters["status"] = "review"
+
+        cards_ids_queue = await self.access.get_cards_for_session(
+            current_user,
+            filters,
+        )
+        logger.info("cards ids queue: %r", cards_ids_queue)
+
+        session_dict = session_create_data.model_dump(exclude={"mix"})
         session_dict["user_id"] = current_user.id
-        session_dict["id"] = generate_base_id()
+        session_dict["id"] = await generate_base_id()
+        if session_create_data.mix:
+            random.shuffle(cards_ids_queue)
+        session_dict["card_ids_queue"] = cards_ids_queue
 
         created_session = await self.repo.create(session_dict)
         if not created_session:
@@ -110,34 +147,17 @@ class SessionManagerService:
             )
             raise ValueError("OPERATION_FAILED")
 
-        validated_created_roadmap = await session_orm_to_model(created_session)
+        validated_created_session = await session_orm_to_model(created_session)
 
-        return validated_created_roadmap
-
-    @service_handler
-    async def get_next_card(
-        self,
-        user_id: BaseIdType,
-        session_id: BaseIdType,
-    ) -> CardRead:
-        next_card_id = await self.repo.get_next_card_id(user_id, session_id)
-
-        if not next_card_id:
-            logger.warning("Next card not found for session: %r", session_id)
-            raise ValueError("Next card not found")
-
-        card_data = await get_card_from_service(str(user_id), str(next_card_id))
-        if not card_data:
-            raise ValueError("Card not found")
-
-        return CardRead.model_validate(card_data)
+        return validated_created_session
 
     @service_handler
-    async def delete_session(
+    async def delete(
         self,
         current_user: "User",
         session_id: "BaseIdType",
     ) -> None:
+        await self.get_by_id(current_user, session_id)
 
         success = await self.repo.delete(session_id)
         if success:
@@ -147,55 +167,21 @@ class SessionManagerService:
             raise ValueError("OPERATION_FAILED")
 
     @service_handler
-    async def finish_session(
-        self, user_id: BaseIdType, session_id: BaseIdType
-    ) -> SessionResult:
-        finished_session = await self.repo.finish_session(user_id, session_id)
-
-        if not finished_session:
-            logger.warning("Session not found for finish: %r", session_id)
-            raise ValueError("Session not found")
-
-        result_data = {
-            **finished_session.model_dump(),
-            **calculate_session_stats(finished_session),
-        }
-
-        logger.info("Successful finishing session: %r", session_id)
-        return SessionResult.model_validate(result_data)
-
-    @service_handler
-    async def abandon_session(
-        self, user_id: BaseIdType, session_id: BaseIdType
-    ) -> bool:
-        success = await self.repo.abandon_session(user_id, session_id)
-
-        if success:
-            logger.info("Session abandoned successfully: %r", session_id)
-        else:
-            logger.warning(
-                "Failed to abandon session: %r - session not found, not active, or not owned by user",
-                session_id,
-            )
-
-        return success
-
-    @service_handler
-    async def submit_answer(
+    async def update(
         self,
-        user_id: BaseIdType,
-        session_id: BaseIdType,
-        answer_data: SubmitAnswerRequest,
-    ) -> SessionRead:
-        # need ro check if session exist, status==active, if mode==exam then answer_data.answer!=review
-        # answer_data.card_id in Session.card_queue
+        current_user: "User",
+        session_id: "BaseIdType",
+        session_update_data: "SessionUpdate",
+    ) -> "SessionRead":
+        await self.get_by_id(current_user, session_id)
 
-        updated_session = await self.repo.submit_answer(
-            user_id, session_id, answer_data
-        )
+        session_dict = session_update_data.model_dump(exclude_unset=True)
 
+        updated_session = await self.repo.update(session_id, session_dict)
         if not updated_session:
-            logger.warning("Failed to update session: %r", session_id)
-            raise ValueError("Failed to update session")
+            logger.error("Failed to update Session(id=%r)", session_id)
+            raise ValueError("OPERATION_FAILED")
 
-        return SessionRead.model_validate(updated_session)
+        validated_updated_session = await session_orm_to_model(updated_session)
+
+        return validated_updated_session

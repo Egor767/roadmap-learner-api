@@ -54,7 +54,10 @@ class RoadmapService:
 
         db_roadmaps = await self.repo.get_by_filters(accessed_filters)
         if not db_roadmaps:
-            logger.warning("Roadmaps with filters(%r) not found", filters)
+            logger.warning(
+                "Roadmaps with filters(%r) not found",
+                filters,
+            )
             return []
 
         validated_roadmaps = [

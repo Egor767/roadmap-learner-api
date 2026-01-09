@@ -1,4 +1,4 @@
-from app.models.session_manager import Session
+from app.models.session import Session
 from app.schemas.block import BlockRead
 from app.schemas.card import CardRead
 from app.schemas.roadmap import RoadmapRead
@@ -36,7 +36,7 @@ async def card_orm_to_model(db_card: Card | None) -> CardRead | None:
     return
 
 
-def session_orm_to_model(db_session: Session | None) -> SessionRead | None:
+async def session_orm_to_model(db_session: Session | None) -> SessionRead | None:
     if db_session:
         return SessionRead.model_validate(db_session)
     return

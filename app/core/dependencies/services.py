@@ -2,25 +2,30 @@ from typing import Annotated, TYPE_CHECKING
 
 from fastapi import Depends
 
-from app.services import AccessService, RoadmapService
-from app.services import BlockService, CardService, SessionManagerService, UserService
+from app.services import (
+    AccessService,
+    UserService,
+    RoadmapService,
+    BlockService,
+    CardService,
+    SessionService,
+)
 from .repositories import (
     get_user_repository,
     get_roadmap_repository,
     get_block_repository,
     get_card_repository,
-    get_session_manager_repository,
+    get_session_repository,
 )
 
 if TYPE_CHECKING:
     from repositories import (
         UserRepository,
         RoadmapRepository,
-        CardRepository,
         BlockRepository,
-        SessionManagerRepository,
+        CardRepository,
+        SessionRepository,
     )
-    from repositories import BlockRepository
 
 
 async def get_access_service(
@@ -32,8 +37,16 @@ async def get_access_service(
         "BlockRepository",
         Depends(get_block_repository),
     ],
+    card_repo: Annotated[
+        "CardRepository",
+        Depends(get_card_repository),
+    ],
 ) -> AccessService:
-    yield AccessService(roadmap_repo, block_repo)
+    yield AccessService(
+        roadmap_repo,
+        block_repo,
+        card_repo,
+    )
 
 
 async def get_user_service(
@@ -88,14 +101,14 @@ async def get_card_service(
     yield CardService(repo, access_service)
 
 
-async def get_session_manager_service(
+async def get_session_service(
     repo: Annotated[
-        "SessionManagerRepository",
-        Depends(get_session_manager_repository),
+        "SessionRepository",
+        Depends(get_session_repository),
     ],
     access_service: Annotated[
         "AccessService",
         Depends(get_access_service),
     ],
-) -> SessionManagerService:
-    yield SessionManagerService(repo, access_service)
+) -> SessionService:
+    yield SessionService(repo, access_service)

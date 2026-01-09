@@ -1,9 +1,15 @@
 import logging
 from typing import TYPE_CHECKING
 
+from app.utils.mappers.orm_to_models import block_orm_to_model
+
 if TYPE_CHECKING:
     from app.core.types import BaseIdType
-    from app.repositories import RoadmapRepository, BlockRepository
+    from app.repositories import (
+        RoadmapRepository,
+        BlockRepository,
+        CardRepository,
+    )
     from app.models import User
 
 
@@ -15,9 +21,11 @@ class AccessService:
         self,
         roadmap_repo: "RoadmapRepository",
         block_repo: "BlockRepository",
+        card_repo: "CardRepository",
     ):
         self.roadmap_repo = roadmap_repo
         self.block_repo = block_repo
+        self.card_repo = card_repo
 
     @staticmethod
     async def filter_users_for_user(
@@ -86,6 +94,8 @@ class AccessService:
         user: "User",
         roadmap_id: "BaseIdType",
     ) -> None:
+        if user.is_superuser:
+            return
 
         roadmap = await self.roadmap_repo.get_by_id(roadmap_id)
         if not roadmap:
@@ -95,7 +105,7 @@ class AccessService:
             )
             raise ValueError("NOT_FOUND")
 
-        if user.is_superuser or roadmap.user_id == user.id:
+        if roadmap.user_id == user.id:
             return
 
         logger.error(
@@ -110,7 +120,6 @@ class AccessService:
         user: "User",
         filters: dict,
     ) -> dict:
-        logger.info("filters: %r", filters)
         if user.is_superuser:
             return filters
 
@@ -122,7 +131,6 @@ class AccessService:
             return filters
 
         if filters.get("roadmap_id") in allowed_roadmaps_ids:
-            logger.info("if 2")
             return filters
 
         logger.error(
@@ -154,7 +162,9 @@ class AccessService:
             )
             raise ValueError("NOT_FOUND")
 
-        await self.ensure_can_view_block(user, block.model_dump())
+        validated_block = await block_orm_to_model(block)
+
+        await self.ensure_can_view_block(user, validated_block.model_dump())
 
     async def filter_cards_for_user(
         self,
@@ -194,3 +204,59 @@ class AccessService:
     ) -> None:
 
         await self.ensure_can_view_block_by_id(user, card.get("block_id"))
+
+    @staticmethod
+    async def filter_sessions_for_user(
+        user: "User",
+        filters: dict,
+    ) -> dict:
+        logger.info("filters = %r", filters)
+        if user.is_superuser:
+            return filters
+
+        if not filters.get("user_id"):
+            filters["user_id"] = user.id
+            return filters
+
+        if filters.get("user_id") == user.id:
+            return filters
+
+        logger.error(
+            "Access denied to Sessions with filters(%r) for User(id=%r)",
+            filters,
+            user.id,
+        )
+        raise PermissionError("Forbidden")
+
+    @staticmethod
+    async def ensure_can_view_session(
+        user: "User",
+        session: dict,
+    ) -> None:
+
+        if user.is_superuser or user.id == session.get("user_id"):
+            return
+
+        logger.error(
+            "Access denied to Session(id=%r) for User(id=%r)",
+            session.get("user_id"),
+            user.id,
+        )
+        raise PermissionError("Forbidden")
+
+    async def get_cards_for_session(
+        self, user: "User", filters: dict
+    ) -> list["BaseIdType"]:
+        allowed_filters = await self.filter_cards_for_user(user, filters.copy())
+
+        cards = await self.card_repo.get_by_filters(allowed_filters)
+        if cards:
+            cards_ids_queue = [c.id for c in cards]
+            return cards_ids_queue
+
+        logger.error(
+            "No accessible cards found for user(id=%r) with filters(%r)",
+            user.id,
+            allowed_filters,
+        )
+        raise ValueError("NOT_FOUND")
