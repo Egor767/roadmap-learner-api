@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 from app.utils.mappers.orm_to_models import block_orm_to_model
 
 if TYPE_CHECKING:
-    from app.core.types import BaseIdType
+    from app.core.custom_types import BaseIdType
     from app.repositories import (
         RoadmapRepository,
         BlockRepository,

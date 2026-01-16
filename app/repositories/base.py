@@ -5,7 +5,7 @@ from app.models import Base
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
-    from app.core.types import BaseIdType
+    from app.core.custom_types import BaseIdType
 
 
 class BaseRepository(ABC):

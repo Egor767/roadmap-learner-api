@@ -1,12 +1,12 @@
 from typing import TYPE_CHECKING
 
 from app.core.handlers import service_handler
-from app.core.logging import block_service_logger as logger
+from app.core.loggers import block_service_logger as logger
 from app.shared.generate_id import generate_base_id
 from app.utils.mappers.orm_to_models import block_orm_to_model
 
 if TYPE_CHECKING:
-    from app.core.types import BaseIdType
+    from app.core.custom_types import BaseIdType
     from app.services import AccessService
     from app.repositories.block import BlockRepository
     from app.models import User

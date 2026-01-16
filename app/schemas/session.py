@@ -3,7 +3,7 @@ from enum import Enum
 
 from pydantic import BaseModel, ConfigDict
 
-from app.core.types import BaseIdType
+from app.core.custom_types import BaseIdType
 
 
 class BaseSession(BaseModel):

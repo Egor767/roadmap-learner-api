@@ -1,12 +1,12 @@
 from typing import TYPE_CHECKING
 
 from app.core.handlers import service_handler
-from app.core.logging import card_service_logger as logger
+from app.core.loggers import card_service_logger as logger
 from app.shared.generate_id import generate_base_id
 from app.utils.mappers.orm_to_models import card_orm_to_model
 
 if TYPE_CHECKING:
-    from app.core.types import BaseIdType
+    from app.core.custom_types import BaseIdType
     from app.services import AccessService
     from app.repositories import CardRepository
     from app.models import User

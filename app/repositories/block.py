@@ -12,7 +12,7 @@ from app.repositories import BaseRepository
 from app.models import Block
 
 if TYPE_CHECKING:
-    from app.core.types import BaseIdType
+    from app.core.custom_types import BaseIdType
 
 
 class BlockRepository(BaseRepository):

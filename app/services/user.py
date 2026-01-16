@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
 from app.core.handlers import service_handler
-from app.core.logging import user_service_logger as logger
+from app.core.loggers import user_service_logger as logger
 from app.utils.mappers.orm_to_models import user_orm_to_model
 
 if TYPE_CHECKING:

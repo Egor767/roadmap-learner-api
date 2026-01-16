@@ -3,13 +3,13 @@ import random
 from typing import TYPE_CHECKING
 
 from app.core.handlers import service_handler
-from app.core.logging import session_manager_service_logger as logger
+from app.core.loggers import session_manager_service_logger as logger
 from app.shared.generate_id import generate_base_id
 from app.utils.mappers.orm_to_models import session_orm_to_model
 from app.schemas.session import SessionMode, SessionStatus, SessionResult
 
 if TYPE_CHECKING:
-    from app.core.types import BaseIdType
+    from app.core.custom_types import BaseIdType
     from app.services import AccessService
     from app.repositories import SessionRepository
     from app.schemas.session import (

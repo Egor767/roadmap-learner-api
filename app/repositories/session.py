@@ -16,7 +16,7 @@ from app.schemas.session import (
 )
 
 if TYPE_CHECKING:
-    from app.core.types import BaseIdType
+    from app.core.custom_types import BaseIdType
 
 
 class SessionRepository(BaseRepository):

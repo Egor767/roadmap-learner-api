@@ -7,7 +7,7 @@ from app.core.authentication.fastapi_users import current_active_user
 from app.core.config import settings
 from app.core.dependencies.services import get_roadmap_service
 from app.core.handlers import router_handler
-from app.core.types import BaseIdType
+from app.core.custom_types import BaseIdType
 from app.schemas.roadmap import (
     RoadmapRead,
     RoadmapCreate,

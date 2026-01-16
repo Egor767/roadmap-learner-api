@@ -11,7 +11,7 @@ from .mixins import (
     IdMixin,
 )
 
-from app.core.types import BaseIdType
+from app.core.custom_types import BaseIdType
 
 
 class Session(
