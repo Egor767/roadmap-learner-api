@@ -18,7 +18,10 @@ from .repositories import (
     get_session_repository,
 )
 
+from .cache import get_redis
+
 if TYPE_CHECKING:
+    from redis.asyncio import Redis
     from repositories import (
         UserRepository,
         RoadmapRepository,
@@ -58,8 +61,16 @@ async def get_user_service(
         "AccessService",
         Depends(get_access_service),
     ],
+    redis: Annotated[
+        "Redis",
+        Depends(get_redis),
+    ],
 ) -> UserService:
-    yield UserService(user_repo, access_service)
+    yield UserService(
+        user_repo,
+        access_service,
+        redis,
+    )
 
 
 async def get_roadmap_service(
@@ -71,8 +82,16 @@ async def get_roadmap_service(
         "AccessService",
         Depends(get_access_service),
     ],
+    redis: Annotated[
+        "Redis",
+        Depends(get_redis),
+    ],
 ) -> RoadmapService:
-    yield RoadmapService(repo, access_service)
+    yield RoadmapService(
+        repo,
+        access_service,
+        redis,
+    )
 
 
 async def get_block_service(

@@ -32,16 +32,16 @@ class AccessService:
         user: "User",
         filters: dict,
     ) -> dict:
-
+        accessed_filters = filters.copy()
         if user.is_superuser:
-            return filters
+            return accessed_filters
 
-        if not filters.get("id"):
-            filters["id"] = user.id
-            return filters
+        if not accessed_filters.get("id"):
+            accessed_filters["id"] = user.id
+            return accessed_filters
 
-        if filters.get("id") == user.id:
-            return filters
+        if accessed_filters.get("id") == user.id:
+            return accessed_filters
 
         logger.error(
             "Access denied to User with filters(%r) for User(id=%r)",
@@ -55,16 +55,16 @@ class AccessService:
         user: "User",
         filters: dict,
     ) -> dict:
-        logger.info("filters = %r", filters)
+        accessed_filters = filters.copy()
         if user.is_superuser:
-            return filters
+            return accessed_filters
 
-        if not filters.get("user_id"):
-            filters["user_id"] = user.id
-            return filters
+        if not accessed_filters.get("user_id"):
+            accessed_filters["user_id"] = user.id
+            return accessed_filters
 
-        if filters.get("user_id") == user.id:
-            return filters
+        if accessed_filters.get("user_id") == user.id:
+            return accessed_filters
 
         logger.error(
             "Access denied to Roadmaps with filters(%r) for User(id=%r)",
@@ -120,18 +120,19 @@ class AccessService:
         user: "User",
         filters: dict,
     ) -> dict:
+        accessed_filters = filters.copy()
         if user.is_superuser:
-            return filters
+            return accessed_filters
 
         allowed_roadmaps = await self.roadmap_repo.get_by_filters({"user_id": user.id})
         allowed_roadmaps_ids = [rm.id for rm in allowed_roadmaps]
 
-        if not filters.get("roadmap_id"):
-            filters["roadmap_id"] = allowed_roadmaps_ids
-            return filters
+        if not accessed_filters.get("roadmap_id"):
+            accessed_filters["roadmap_id"] = allowed_roadmaps_ids
+            return accessed_filters
 
-        if filters.get("roadmap_id") in allowed_roadmaps_ids:
-            return filters
+        if accessed_filters.get("roadmap_id") in allowed_roadmaps_ids:
+            return accessed_filters
 
         logger.error(
             "Access denied to Blocks with filters(%r) for User(id=%r)",
@@ -171,9 +172,9 @@ class AccessService:
         user: "User",
         filters: dict,
     ) -> dict:
-
+        accessed_filters = filters.copy()
         if user.is_superuser:
-            return filters
+            return accessed_filters
 
         allowed_roadmaps = await self.roadmap_repo.get_by_filters({"user_id": user.id})
         allowed_roadmaps_ids = [r.id for r in allowed_roadmaps]
@@ -183,12 +184,12 @@ class AccessService:
         )
         allowed_blocks_ids = [b.id for b in allowed_blocks]
 
-        if not filters.get("block_id"):
-            filters["block_id"] = allowed_blocks_ids
-            return filters
+        if not accessed_filters.get("block_id"):
+            accessed_filters["block_id"] = allowed_blocks_ids
+            return accessed_filters
 
-        if filters.get("block_id") in allowed_blocks_ids:
-            return filters
+        if accessed_filters.get("block_id") in allowed_blocks_ids:
+            return accessed_filters
 
         logger.error(
             "Access denied to Cards with filters(%r) for User(id=%r)",
@@ -202,7 +203,6 @@ class AccessService:
         user: "User",
         card: dict,
     ) -> None:
-
         await self.ensure_can_view_block_by_id(user, card.get("block_id"))
 
     @staticmethod
@@ -210,16 +210,16 @@ class AccessService:
         user: "User",
         filters: dict,
     ) -> dict:
-        logger.info("filters = %r", filters)
+        accessed_filters = filters.copy()
         if user.is_superuser:
-            return filters
+            return accessed_filters
 
-        if not filters.get("user_id"):
-            filters["user_id"] = user.id
-            return filters
+        if not accessed_filters.get("user_id"):
+            accessed_filters["user_id"] = user.id
+            return accessed_filters
 
-        if filters.get("user_id") == user.id:
-            return filters
+        if accessed_filters.get("user_id") == user.id:
+            return accessed_filters
 
         logger.error(
             "Access denied to Sessions with filters(%r) for User(id=%r)",
@@ -233,7 +233,6 @@ class AccessService:
         user: "User",
         session: dict,
     ) -> None:
-
         if user.is_superuser or user.id == session.get("user_id"):
             return
 

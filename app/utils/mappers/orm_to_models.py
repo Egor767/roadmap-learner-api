@@ -1,3 +1,4 @@
+from app.core.handlers import logger
 from app.models.session import Session
 from app.schemas.block import BlockRead
 from app.schemas.card import CardRead
@@ -21,7 +22,7 @@ async def user_orm_to_model(db_user: User | None) -> UserRead | None:
 async def roadmap_orm_to_model(db_roadmap: Roadmap | None) -> RoadmapRead | None:
     if db_roadmap:
         return RoadmapRead.model_validate(db_roadmap)
-    return
+    return None
 
 
 async def block_orm_to_model(db_block: Block | None) -> BlockRead | None:

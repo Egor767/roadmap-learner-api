@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 import uvicorn
 from fastapi import FastAPI
 from starlette.responses import RedirectResponse
+from redis.asyncio import Redis
 
 from app.api import router as api_router
 from app.core.config import settings
@@ -11,7 +12,12 @@ from app.core.config import settings
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    app.state.redis = Redis.from_url(
+        settings.redis.url,
+        decode_responses=True,
+    )
     yield
+    await app.state.redis.close()
 
 
 logging.basicConfig(

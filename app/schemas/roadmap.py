@@ -10,6 +10,8 @@ class BaseRoadmap(BaseModel):
     title: str
     description: str | None = None
 
+    model_config = ConfigDict(from_attributes=True)
+
 
 class RoadmapCreate(BaseRoadmap):
     pass

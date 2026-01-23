@@ -28,6 +28,31 @@ class DBConfig(BaseModel):
         return f"{self.url_prefix}://{self.username}:{self.password}@{self.host}:{self.port}/{self.name}"
 
 
+class RedisDB(BaseModel):
+    cache: int = 0
+    queue: int = 1
+
+
+class RedisConfig(BaseModel):
+    host: str = "localhost"
+    port: int = 6379
+    db: RedisDB = RedisDB()
+    url_prefix: str = "redis"
+
+    @property
+    def url(self) -> str:
+        return f"{self.url_prefix}://{self.host}:{self.port}/{self.db.cache}"
+
+
+class CacheNamespace(BaseModel):
+    users_list: str = "users-list"
+
+
+class CacheConfig(BaseModel):
+    prefix: str = "cache"
+    namespace: CacheNamespace = CacheNamespace()
+
+
 class RunConfig(BaseModel):
     host: str = "127.0.0.1"
     port: int = 8080
@@ -76,6 +101,8 @@ class Settings(BaseSettings):
     run: RunConfig = RunConfig()
     api: ApiPrefix = ApiPrefix()
     access_token: AccessToken
+    redis: RedisConfig = RedisConfig()
+    cache: CacheConfig = CacheConfig()
 
 
 settings = Settings()
