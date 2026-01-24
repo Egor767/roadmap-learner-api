@@ -4,14 +4,17 @@ from typing import TYPE_CHECKING
 from app.core.handlers import service_handler
 from app.core.loggers import roadmap_service_logger as logger
 from app.shared.generate_id import generate_base_id
+from app.shared.access import get_accessed_filters, user_can_read_entity
 from app.utils.mappers.orm_to_models import roadmap_orm_to_model
-from app.utils.mappers.cache_to_model import cache_to_models
+from app.utils.mappers.cache_to_model import (
+    block_cache_to_models,
+    roadmap_cache_to_models,
+)
 from app.utils.cache import key_builder
 
 if TYPE_CHECKING:
     from redis.asyncio import Redis
     from app.core.custom_types import BaseIdType
-    from app.services import AccessService
     from app.repositories import RoadmapRepository
     from app.models import User
     from app.schemas.roadmap import (
@@ -26,11 +29,9 @@ class RoadmapService:
     def __init__(
         self,
         repo: "RoadmapRepository",
-        access_service: "AccessService",
         redis: "Redis",
     ):
         self.repo = repo
-        self.access = access_service
         self.redis = redis
         self.ttl = 60
 
@@ -41,7 +42,7 @@ class RoadmapService:
         cached = await self.redis.get(cache_key)
         if cached:
             logger.info("Hit cache for key: %r", cache_key)
-            return await cache_to_models(cached)
+            return await roadmap_cache_to_models(cached)
 
         # get from repository
         db_roadmaps = await self.repo.get_all()
@@ -69,7 +70,10 @@ class RoadmapService:
         current_user: "User",
         filters: "RoadmapFilters",
     ) -> list["RoadmapRead"]:
-        filters_dict = filters.model_dump(exclude_none=True, exclude_unset=True)
+        filters_dict = filters.model_dump(
+            exclude_none=True,
+            exclude_unset=True,
+        )
         # try get from cache only for empty filters (because don't have route /all for get user roadmaps)
         if not filters_dict:
             cache_key = await key_builder(
@@ -81,10 +85,10 @@ class RoadmapService:
             cached = await self.redis.get(cache_key)
             if cached:
                 logger.info("Hit cache for key: %r", cache_key)
-                return await cache_to_models(cached)
+                return await roadmap_cache_to_models(cached)
 
         # get from repository
-        accessed_filters = await self.access.filter_roadmaps_for_user(
+        accessed_filters = await get_accessed_filters(
             current_user,
             filters_dict,
         )
@@ -132,7 +136,7 @@ class RoadmapService:
         cached = await self.redis.get(cache_key)
         if cached:
             logger.info("Hit cache for key: %r", cache_key)
-            result_roadmap = await cache_to_models(cached)
+            result_roadmap = await roadmap_cache_to_models(cached)
             return result_roadmap[0]
 
         # get from repository
@@ -143,9 +147,7 @@ class RoadmapService:
 
         # validation from orm to model
         validated_roadmap = await roadmap_orm_to_model(db_roadmap)
-        await self.access.ensure_can_view_roadmap(
-            current_user, validated_roadmap.model_dump()
-        )
+        await user_can_read_entity(current_user, validated_roadmap.model_dump())
 
         # set in cache
         await self.redis.set(
@@ -180,8 +182,10 @@ class RoadmapService:
 
         # clear cache for list of user roadmaps
         user_filter_keys = await self.redis.keys(f"roadmaps:user:{current_user.id}:*")
-        if user_filter_keys:
-            await self.redis.delete(*user_filter_keys)
+        all_key = await self.redis.keys(f"roadmaps:all")
+        summary_keys = user_filter_keys + all_key
+        if summary_keys:
+            await self.redis.delete(*summary_keys)
 
         return validated_created_roadmap
 
@@ -202,15 +206,13 @@ class RoadmapService:
 
         # clear cache for list of user roadmaps
         user_filter_keys = await self.redis.keys(f"roadmaps:user:{current_user.id}:*")
-        if user_filter_keys:
-            await self.redis.delete(*user_filter_keys)
-
-        # clear cache for user specific roadmap
         detail_keys = await self.redis.keys(
             f"roadmap:{roadmap_id}:user:{current_user.id}:*"
         )
-        if detail_keys:
-            await self.redis.delete(*detail_keys)
+        all_key = await self.redis.keys("roadmaps:all")
+        summary_keys = user_filter_keys + all_key + detail_keys
+        if summary_keys:
+            await self.redis.delete(*summary_keys)
 
     @service_handler
     async def update(
@@ -232,14 +234,12 @@ class RoadmapService:
 
         # clear cache for list of user roadmaps
         user_filter_keys = await self.redis.keys(f"roadmaps:user:{current_user.id}:*")
-        if user_filter_keys:
-            await self.redis.delete(*user_filter_keys)
-
-        # clear cache for user specific roadmap
         detail_keys = await self.redis.keys(
             f"roadmap:{roadmap_id}:user:{current_user.id}:*"
         )
-        if detail_keys:
-            await self.redis.delete(*detail_keys)
+        all_key = await self.redis.keys("roadmaps:all")
+        summary_keys = user_filter_keys + all_key + detail_keys
+        if summary_keys:
+            await self.redis.delete(*summary_keys)
 
         return validated_updated_roadmap

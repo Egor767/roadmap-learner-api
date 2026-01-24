@@ -4,13 +4,14 @@ from typing import TYPE_CHECKING
 
 from app.core.handlers import service_handler
 from app.core.loggers import session_manager_service_logger as logger
+from app.shared.access import get_accessed_filters, user_can_read_entity
 from app.shared.generate_id import generate_base_id
 from app.utils.mappers.orm_to_models import session_orm_to_model
 from app.schemas.session import SessionMode, SessionStatus, SessionResult
 
 if TYPE_CHECKING:
+    from redis.asyncio import Redis
     from app.core.custom_types import BaseIdType
-    from app.services import AccessService
     from app.repositories import SessionRepository
     from app.schemas.session import (
         SessionRead,
@@ -25,10 +26,10 @@ class SessionService:
     def __init__(
         self,
         repo: "SessionRepository",
-        access_service: "AccessService",
+        redis: "Redis",
     ):
         self.repo = repo
-        self.access = access_service
+        self.redis = redis
 
     @service_handler
     async def get_all(self) -> list["SessionRead"]:
@@ -50,7 +51,7 @@ class SessionService:
         filters: "SessionFilters",
     ) -> list["SessionRead"]:
         filters_dict = filters.model_dump()
-        accessed_filters = await self.access.filter_sessions_for_user(
+        accessed_filters = await get_accessed_filters(
             current_user,
             filters_dict,
         )
@@ -81,9 +82,7 @@ class SessionService:
             raise ValueError("NOT_FOUND")
 
         validated_session = await session_orm_to_model(db_session)
-        await self.access.ensure_can_view_session(
-            current_user, validated_session.model_dump()
-        )
+        await user_can_read_entity(current_user, validated_session.model_dump())
 
         return validated_session
 
@@ -126,7 +125,7 @@ class SessionService:
         if session_create_data.mode is SessionMode.REVIEW:
             filters["status"] = "review"
 
-        cards_ids_queue = await self.access.get_cards_for_session(
+        cards_ids_queue = await get_cards_for_session(
             current_user,
             filters,
         )

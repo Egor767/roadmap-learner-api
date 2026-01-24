@@ -6,11 +6,11 @@ from redis.asyncio import Redis
 
 from app.core.handlers import service_handler
 from app.core.loggers import user_service_logger as logger
+from app.shared.access import get_accessed_filters
 from app.utils.mappers.cache_to_model import users_cache_to_model
 from app.utils.mappers.orm_to_models import user_orm_to_model
 
 if TYPE_CHECKING:
-    from app.services import AccessService
     from app.repositories import UserRepository
     from app.schemas.user import UserRead, UserFilters
     from app.models import User
@@ -20,11 +20,9 @@ class UserService:
     def __init__(
         self,
         repo: "UserRepository",
-        access_service: "AccessService",
         redis: "Redis",
     ):
         self.repo = repo
-        self.access = access_service
         self.redis = redis
         self.ttl = 60
 
@@ -56,7 +54,7 @@ class UserService:
         filters: "UserFilters",
     ) -> list["UserRead"]:
         filters_dict = filters.model_dump()
-        accessed_filters = await self.access.filter_users_for_user(
+        accessed_filters = await get_accessed_filters(
             current_user,
             filters_dict,
         )

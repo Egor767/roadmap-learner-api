@@ -11,6 +11,7 @@ dependencies = [
     "dotenv>=0.9.9",
     "fastapi>=0.117.1",
     "fastapi-users[oauth,sqlalchemy]>=15.0.1",
+    "httpx>=0.28.1",
     "pydantic-settings>=2.11.0",
     "redis>=5.0.0",
     "setuptools>=80.9.0",

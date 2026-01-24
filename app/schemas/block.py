@@ -33,6 +33,7 @@ class BlockUpdate(BaseModel):
 class BlockRead(BaseBlock):
     id: BaseIdType
     roadmap_id: BaseIdType
+    user_id: BaseIdType
     order_index: int
     status: BlockStatus
     created_at: datetime
@@ -42,6 +43,7 @@ class BlockRead(BaseBlock):
 
 
 class BlockFilters(BaseModel):
+    user_id: BaseIdType | None = None
     roadmap_id: BaseIdType | None = None
     title: str | None = None
     description: str | None = None

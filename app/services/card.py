@@ -2,12 +2,13 @@ from typing import TYPE_CHECKING
 
 from app.core.handlers import service_handler
 from app.core.loggers import card_service_logger as logger
+from app.shared.access import get_accessed_filters, user_can_read_entity
 from app.shared.generate_id import generate_base_id
 from app.utils.mappers.orm_to_models import card_orm_to_model
 
 if TYPE_CHECKING:
+    from redis.asyncio import Redis
     from app.core.custom_types import BaseIdType
-    from app.services import AccessService
     from app.repositories import CardRepository
     from app.models import User
     from app.schemas.card import (
@@ -22,10 +23,10 @@ class CardService:
     def __init__(
         self,
         repo: "CardRepository",
-        access_service: "AccessService",
+        redis: "Redis",
     ):
         self.repo = repo
-        self.access = access_service
+        self.redis = redis
 
     @service_handler
     async def get_all(self) -> list["CardRead"]:
@@ -45,7 +46,7 @@ class CardService:
         filters: "CardFilters",
     ) -> list["CardRead"]:
         filters_dict = filters.model_dump()
-        accessed_filters = await self.access.filter_cards_for_user(
+        accessed_filters = await get_accessed_filters(
             current_user,
             filters_dict,
         )
@@ -72,8 +73,9 @@ class CardService:
 
         validated_card = await card_orm_to_model(db_card)
 
-        await self.access.ensure_can_view_card(
-            current_user, validated_card.model_dump()
+        await user_can_read_entity(
+            current_user,
+            validated_card.model_dump(),
         )
 
         return validated_card
@@ -86,8 +88,6 @@ class CardService:
     ) -> "CardRead":
         card_dict = card_create_data.model_dump()
         card_dict["id"] = await generate_base_id()
-
-        await self.access.ensure_can_view_card(current_user, card_dict)
 
         created_card = await self.repo.create(card_dict)
         if not created_card:

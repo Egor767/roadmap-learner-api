@@ -57,10 +57,6 @@ async def get_user_service(
         "UserRepository",
         Depends(get_user_repository),
     ],
-    access_service: Annotated[
-        "AccessService",
-        Depends(get_access_service),
-    ],
     redis: Annotated[
         "Redis",
         Depends(get_redis),
@@ -68,7 +64,6 @@ async def get_user_service(
 ) -> UserService:
     yield UserService(
         user_repo,
-        access_service,
         redis,
     )
 
@@ -78,10 +73,6 @@ async def get_roadmap_service(
         "RoadmapRepository",
         Depends(get_roadmap_repository),
     ],
-    access_service: Annotated[
-        "AccessService",
-        Depends(get_access_service),
-    ],
     redis: Annotated[
         "Redis",
         Depends(get_redis),
@@ -89,7 +80,6 @@ async def get_roadmap_service(
 ) -> RoadmapService:
     yield RoadmapService(
         repo,
-        access_service,
         redis,
     )
 
@@ -99,12 +89,15 @@ async def get_block_service(
         "BlockRepository",
         Depends(get_block_repository),
     ],
-    access_service: Annotated[
-        "AccessService",
-        Depends(get_access_service),
+    redis: Annotated[
+        "Redis",
+        Depends(get_redis),
     ],
 ) -> BlockService:
-    yield BlockService(repo, access_service)
+    yield BlockService(
+        repo,
+        redis,
+    )
 
 
 async def get_card_service(
@@ -112,12 +105,15 @@ async def get_card_service(
         "CardRepository",
         Depends(get_card_repository),
     ],
-    access_service: Annotated[
-        "AccessService",
-        Depends(get_access_service),
+    redis: Annotated[
+        "Redis",
+        Depends(get_redis),
     ],
 ) -> CardService:
-    yield CardService(repo, access_service)
+    yield CardService(
+        repo,
+        redis,
+    )
 
 
 async def get_session_service(
@@ -125,9 +121,12 @@ async def get_session_service(
         "SessionRepository",
         Depends(get_session_repository),
     ],
-    access_service: Annotated[
-        "AccessService",
-        Depends(get_access_service),
+    redis: Annotated[
+        "Redis",
+        Depends(get_redis),
     ],
 ) -> SessionService:
-    yield SessionService(repo, access_service)
+    yield SessionService(
+        repo,
+        redis,
+    )

@@ -51,7 +51,7 @@ class AccessService:
         raise PermissionError("Forbidden")
 
     @staticmethod
-    async def filter_roadmaps_for_user(
+    async def get_accessed_filters(
         user: "User",
         filters: dict,
     ) -> dict:
@@ -124,6 +124,7 @@ class AccessService:
         if user.is_superuser:
             return accessed_filters
 
+        api_roadmaps = ...
         allowed_roadmaps = await self.roadmap_repo.get_by_filters({"user_id": user.id})
         allowed_roadmaps_ids = [rm.id for rm in allowed_roadmaps]
 
