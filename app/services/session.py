@@ -1,9 +1,14 @@
-from datetime import datetime
 import random
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 from app.core.handlers import service_handler
 from app.core.loggers import session_manager_service_logger as logger
+from app.external.requests import (
+    get_cards_by_filters,
+    get_blocks_by_filters,
+    get_block_by_id,
+)
 from app.shared.access import get_accessed_filters, user_can_read_entity
 from app.shared.generate_id import generate_base_id
 from app.utils.mappers.orm_to_models import session_orm_to_model
@@ -118,6 +123,7 @@ class SessionService:
         self,
         current_user: "User",
         session_create_data: "SessionCreate",
+        token: str,
     ) -> "SessionRead":
         filters = session_create_data.model_dump(
             exclude={"mode", "mix"}, exclude_none=True
@@ -125,11 +131,32 @@ class SessionService:
         if session_create_data.mode is SessionMode.REVIEW:
             filters["status"] = "review"
 
-        cards_ids_queue = await get_cards_for_session(
+        accessed_filters = await get_accessed_filters(
             current_user,
             filters,
         )
-        logger.info("cards ids queue: %r", cards_ids_queue)
+
+        if not accessed_filters.get("block_id", None):
+            blocks_filters = filters.copy()
+            blocks_filters.pop("status", None)
+            blocks_ids = [
+                block.get("id")
+                for block in await get_blocks_by_filters(token, blocks_filters)
+            ]
+        else:
+            blocks_ids = [accessed_filters.get("block_id")]
+
+        cards_ids_queue = []
+        for block_id in blocks_ids:
+            accessed_filters["block_id"] = block_id
+            cards_ids_for_block = [
+                card.get("id")
+                for card in await get_cards_by_filters(
+                    token,
+                    accessed_filters,
+                )
+            ]
+            cards_ids_queue += cards_ids_for_block
 
         session_dict = session_create_data.model_dump(exclude={"mix"})
         session_dict["user_id"] = current_user.id

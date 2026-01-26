@@ -3,7 +3,6 @@ from typing import Annotated, TYPE_CHECKING
 from fastapi import Depends
 
 from app.services import (
-    AccessService,
     UserService,
     RoadmapService,
     BlockService,
@@ -28,27 +27,6 @@ if TYPE_CHECKING:
         BlockRepository,
         CardRepository,
         SessionRepository,
-    )
-
-
-async def get_access_service(
-    roadmap_repo: Annotated[
-        "RoadmapRepository",
-        Depends(get_roadmap_repository),
-    ],
-    block_repo: Annotated[
-        "BlockRepository",
-        Depends(get_block_repository),
-    ],
-    card_repo: Annotated[
-        "CardRepository",
-        Depends(get_card_repository),
-    ],
-) -> AccessService:
-    yield AccessService(
-        roadmap_repo,
-        block_repo,
-        card_repo,
     )
 
 

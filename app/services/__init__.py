@@ -1,6 +1,5 @@
 __all__ = (
     "BaseService",
-    "AccessService",
     "UserManager",
     "UserService",
     "RoadmapService",
@@ -10,7 +9,6 @@ __all__ = (
 )
 
 from .base import BaseService
-from .access import AccessService
 from .user_manager import UserManager
 from .user import UserService
 from .roadmap import RoadmapService

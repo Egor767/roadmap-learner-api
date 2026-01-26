@@ -7,7 +7,6 @@ from app.shared.generate_id import generate_base_id
 from app.shared.access import get_accessed_filters, user_can_read_entity
 from app.utils.mappers.orm_to_models import roadmap_orm_to_model
 from app.utils.mappers.cache_to_model import (
-    block_cache_to_models,
     roadmap_cache_to_models,
 )
 from app.utils.cache import key_builder

@@ -37,7 +37,7 @@ class BlockService:
 
     @service_handler
     async def get_all(self) -> list["BlockRead"]:
-        cache_key = "roadmaps:all"
+        cache_key = "blocks:all"
         cached = await self.redis.get(cache_key)
         if cached:
             logger.info("Hit cache for key: %r", cache_key)
@@ -155,6 +155,7 @@ class BlockService:
     ) -> "BlockRead":
         block_dict = block_create_data.model_dump()
         block_dict["id"] = await generate_base_id()
+        block_dict["user_id"] = current_user.id
 
         created_block = await self.repo.create(block_dict)
         if not created_block:

@@ -1,6 +1,8 @@
+import logging
+
 from typing import Annotated, TYPE_CHECKING
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from starlette import status
 
 from app.core.authentication.fastapi_users import current_active_user
@@ -20,6 +22,7 @@ if TYPE_CHECKING:
     from app.services import SessionService
     from app.models import User
 
+logger = logging.getLogger()
 
 router = APIRouter(
     prefix=settings.api.v1.sessions,
@@ -129,10 +132,14 @@ async def create_session(
         "SessionService",
         Depends(get_session_service),
     ],
+    request: Request,
 ):
+    auth = request.headers.get("authorization")
+    token = auth[7:]
     return await session_service.create(
         current_user,
         session_create_data,
+        token,
     )
 
 
