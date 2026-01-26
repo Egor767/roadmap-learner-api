@@ -68,4 +68,3 @@ async def get_cards_by_filters(
         )
 
         return response.json()
-
