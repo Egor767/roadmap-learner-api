@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 
 import uvicorn
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import RedirectResponse
 from redis.asyncio import Redis
 
@@ -33,6 +34,18 @@ app = FastAPI(
     title="Roadmap Learner API",
     version="1.0",
     lifespan=lifespan,
+)
+
+origins = [
+    "http://localhost:5173",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
