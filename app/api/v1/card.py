@@ -93,7 +93,7 @@ async def get_card(
 
 # -------------------------------------- CREATE --------------------------------------
 @router.post(
-    "/",
+    "",
     name="cards:create_card",
     response_model=CardRead,
 )

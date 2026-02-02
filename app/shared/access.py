@@ -7,7 +7,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger("Access-Logger")
 
 
-async def get_accessed_filters(
+def get_accessed_filters(
     user: "User",
     filters: dict,
 ) -> dict:
@@ -30,7 +30,7 @@ async def get_accessed_filters(
     raise PermissionError("Forbidden")
 
 
-async def user_can_read_entity(
+def user_can_read_entity(
     user: "User",
     entity: dict,
 ) -> None:

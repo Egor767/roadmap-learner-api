@@ -1,11 +1,12 @@
 import json
 from typing import TYPE_CHECKING
 
+from app.core.config import settings
 from app.core.handlers import service_handler
 from app.core.loggers import card_service_logger as logger
 from app.shared.access import get_accessed_filters, user_can_read_entity
 from app.shared.generate_id import generate_base_id
-from app.utils.cache import key_builder
+from app.utils.cache import is_single_parent_filter, get_cache_key
 from app.utils.mappers.cache_to_model import card_cache_to_models
 from app.utils.mappers.orm_to_models import card_orm_to_model
 
@@ -23,132 +24,109 @@ if TYPE_CHECKING:
 
 
 class CardService:
-    def __init__(
-        self,
-        repo: "CardRepository",
-        redis: "Redis",
-    ):
+    def __init__(self, repo: "CardRepository", redis: "Redis"):
         self.repo = repo
         self.redis = redis
-        self.ttl = 60
 
     @service_handler
     async def get_all(self) -> list["CardRead"]:
-        cache_key = "cards:all"
-        cached = await self.redis.get(cache_key)
-        if cached:
-            logger.info("Hit cache for key: %r", cache_key)
-            return await card_cache_to_models(cached)
-
         db_cards = await self.repo.get_all()
         if not db_cards:
             logger.warning("Cards not found in DB")
             return []
 
-        validated_cards = [await card_orm_to_model(db_card) for db_card in db_cards]
-
-        await self.redis.set(
-            cache_key,
-            json.dumps([u.model_dump(mode="json") for u in validated_cards]),
-            ex=self.ttl,
-        )
-
+        validated_cards = [card_orm_to_model(db_card) for db_card in db_cards]
         return validated_cards
 
     @service_handler
     async def get_by_filters(
-        self,
-        current_user: "User",
-        filters: "CardFilters",
+        self, current_user: "User", filters: "CardFilters"
     ) -> list["CardRead"]:
         filters_dict = filters.model_dump(
             exclude_none=True,
             exclude_unset=True,
         )
 
-        if not filters_dict:
-            cache_key = await key_builder(
-                func=self.get_by_filters,
-                namespace=f"cards:user:{current_user.id}:all",
-                args=(),
-                kwargs={},
+        if is_single_parent_filter(filters_dict, "block_id"):
+            key = get_cache_key(
+                "cards",
+                settings.cache.version,
+                "user",
+                str(current_user.id),
+                "block",
+                str(filters_dict["block_id"]),
+                "list",
             )
-            cached = await self.redis.get(cache_key)
+            cached = await self.redis.get(key)
             if cached:
-                logger.info("Hit cache for key: %r", cache_key)
-                return await card_cache_to_models(cached)
+                return card_cache_to_models(cached)
 
-        accessed_filters = await get_accessed_filters(
+        accessed_filters = get_accessed_filters(
             current_user,
             filters_dict,
         )
-
         db_cards = await self.repo.get_by_filters(accessed_filters)
         if not db_cards:
             logger.warning("Cards with filters(%r) not found", filters)
             return []
 
-        validated_cards = [await card_orm_to_model(db_card) for db_card in db_cards]
+        validated_cards = [card_orm_to_model(db_card) for db_card in db_cards]
 
-        if not filters_dict:
+        if is_single_parent_filter(filters_dict, "block_id"):
             cache_data = json.dumps(
                 [u.model_dump(mode="json") for u in validated_cards],
                 default=str,
             )
             await self.redis.set(
-                cache_key,
+                key,
                 cache_data,
-                ex=self.ttl,
+                ex=settings.cache.card_list_ttl,
             )
-            logger.info("Cache SET: %r", cache_key)
 
         return validated_cards
 
     @service_handler
     async def get_by_id(
-        self,
-        current_user: "User",
-        card_id: "BaseIdType",
+        self, current_user: "User", card_id: "BaseIdType"
     ) -> "CardRead":
-        cache_key = await key_builder(
-            func=self.get_by_id,
-            namespace=f"card:{card_id}:user:{current_user.id}",
-            args=(),
-            kwargs={},
+        key = get_cache_key(
+            "cards",
+            settings.cache.version,
+            "user",
+            str(current_user.id),
+            "card",
+            str(card_id),
+            "detail",
         )
-        cached = await self.redis.get(cache_key)
+        cached = await self.redis.get(key)
         if cached:
-            logger.info("Hit cache for key: %r", cache_key)
-            result_roadmap = await card_cache_to_models(cached)
-            return result_roadmap[0]
+            result_card = card_cache_to_models(cached)
+            return result_card[0]
 
         db_card = await self.repo.get_by_id(card_id)
         if not db_card:
-            logger.error(f"Card(%r) not found or access denied", card_id)
+            logger.error("Card(%r) not found", card_id)
             raise ValueError("NOT_FOUND")
 
-        validated_card = await card_orm_to_model(db_card)
-        await user_can_read_entity(
+        validated_card = card_orm_to_model(db_card)
+        user_can_read_entity(
             current_user,
             validated_card.model_dump(),
         )
 
         await self.redis.set(
-            cache_key,
+            key,
             json.dumps([validated_card.model_dump(mode="json")]),
-            ex=self.ttl,
+            ex=settings.cache.card_detail_ttl,
         )
-
         return validated_card
 
     @service_handler
     async def create(
-        self,
-        current_user: "User",
-        card_create_data: "CardCreate",
+        self, current_user: "User", card_create_data: "CardCreate"
     ) -> "CardRead":
-        card_dict = card_create_data.model_dump()
-        card_dict["id"] = await generate_base_id()
+        card_dict = card_create_data.model_dump(exclude_none=True, exclude_unset=True)
+        card_dict["id"] = generate_base_id()
         card_dict["user_id"] = current_user.id
 
         created_card = await self.repo.create(card_dict)
@@ -160,37 +138,60 @@ class CardService:
             )
             raise ValueError("OPERATION_FAILED")
 
-        validated_created_card = await card_orm_to_model(created_card)
+        validated_created_card = card_orm_to_model(created_card)
 
-        user_filter_keys = await self.redis.keys(f"cards:user:{current_user.id}:*")
-        all_key = await self.redis.keys(f"cards:all")
-        summary_keys = user_filter_keys + all_key
-        if summary_keys:
-            await self.redis.delete(*summary_keys)
+        await self.redis.delete(
+            get_cache_key(
+                "cards",
+                settings.cache.version,
+                "user",
+                str(current_user.id),
+                "block",
+                str(card_dict["block_id"]),
+                "list",
+            ),
+            get_cache_key(
+                "cards",
+                settings.cache.version,
+                "user",
+                str(current_user.id),
+                "card",
+                str(card_dict["id"]),
+                "detail",
+            ),
+        )
 
         return validated_created_card
 
     @service_handler
-    async def delete(
-        self,
-        current_user: "User",
-        card_id: "BaseIdType",
-    ) -> None:
-        await self.get_by_id(current_user, card_id)
+    async def delete(self, current_user: "User", card_id: "BaseIdType") -> None:
+        existed_card = await self.get_by_id(current_user, card_id)
 
         success = await self.repo.delete(card_id)
-        if success:
-            logger.info("Card deleted successfully: %r", card_id)
-        else:
+        if not success:
             logger.error("Deletion for Card(%r) FAILED", card_id)
             raise ValueError("OPERATION_FAILED")
 
-        user_filter_keys = await self.redis.keys(f"cards:user:{current_user.id}:*")
-        detail_keys = await self.redis.keys(f"card:{card_id}:user:{current_user.id}:*")
-        all_key = await self.redis.keys("cards:all")
-        summary_keys = user_filter_keys + all_key + detail_keys
-        if summary_keys:
-            await self.redis.delete(*summary_keys)
+        await self.redis.delete(
+            get_cache_key(
+                "cards",
+                settings.cache.version,
+                "user",
+                str(current_user.id),
+                "block",
+                str(existed_card.block_id),
+                "list",
+            ),
+            get_cache_key(
+                "cards",
+                settings.cache.version,
+                "user",
+                str(current_user.id),
+                "card",
+                str(card_id),
+                "detail",
+            ),
+        )
 
     @service_handler
     async def update(
@@ -201,20 +202,39 @@ class CardService:
     ) -> "CardRead":
         await self.get_by_id(current_user, card_id)
 
-        card_dict = card_update_data.model_dump(exclude_unset=True)
-
-        updated_card = await self.repo.update(card_id, card_dict)
+        card_dict = card_update_data.model_dump(
+            exclude_none=True,
+            exclude_unset=True,
+        )
+        updated_card = await self.repo.update(
+            card_id,
+            card_dict,
+        )
         if not updated_card:
-            logger.warning("Failed to update Block(id=%r)", card_id)
+            logger.warning("Failed to update Card(id=%r)", card_id)
             raise ValueError("OPERATION_FAILED")
 
-        validated_updated_card = await card_orm_to_model(updated_card)
+        validated_updated_card = card_orm_to_model(updated_card)
 
-        user_filter_keys = await self.redis.keys(f"cards:user:{current_user.id}:*")
-        detail_keys = await self.redis.keys(f"card:{card_id}:user:{current_user.id}:*")
-        all_key = await self.redis.keys("cards:all")
-        summary_keys = user_filter_keys + all_key + detail_keys
-        if summary_keys:
-            await self.redis.delete(*summary_keys)
+        await self.redis.delete(
+            get_cache_key(
+                "cards",
+                settings.cache.version,
+                "user",
+                str(current_user.id),
+                "block",
+                str(validated_updated_card.block_id),
+                "list",
+            ),
+            get_cache_key(
+                "cards",
+                settings.cache.version,
+                "user",
+                str(current_user.id),
+                "card",
+                str(card_id),
+                "detail",
+            ),
+        )
 
         return validated_updated_card

@@ -44,13 +44,20 @@ class RedisConfig(BaseModel):
         return f"{self.url_prefix}://{self.host}:{self.port}/{self.db.cache}"
 
 
-class CacheNamespace(BaseModel):
-    users_list: str = "users-list"
-
-
 class CacheConfig(BaseModel):
     prefix: str = "cache"
-    namespace: CacheNamespace = CacheNamespace()
+    version: str = "v1"
+
+    default_ttl: int = 60
+
+    roadmap_list_ttl: int = 60
+    roadmap_detail_ttl: int = 60
+
+    block_list_ttl: int = 60
+    block_detail_ttl: int = 60
+
+    card_list_ttl: int = 60
+    card_detail_ttl: int = 60
 
 
 class RunConfig(BaseModel):

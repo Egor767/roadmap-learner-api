@@ -93,7 +93,7 @@ async def get_block(
 
 # -------------------------------------- CREATE --------------------------------------
 @router.post(
-    "/",
+    "",
     name="blocks:create_block",
     response_model=BlockRead,
 )

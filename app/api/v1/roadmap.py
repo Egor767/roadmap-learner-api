@@ -93,7 +93,7 @@ async def get_roadmap(
 
 # -------------------------------------- CREATE --------------------------------------
 @router.post(
-    "/",
+    "",
     name="roadmaps:create_roadmap",
     response_model=RoadmapRead,
 )

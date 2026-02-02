@@ -1,6 +1,7 @@
 import json
 from typing import TYPE_CHECKING
 
+from app.core.config import settings
 from app.core.handlers import service_handler
 from app.core.loggers import block_service_logger as logger
 from app.shared.access import (
@@ -8,7 +9,7 @@ from app.shared.access import (
     get_accessed_filters,
 )
 from app.shared.generate_id import generate_base_id
-from app.utils.cache import key_builder
+from app.utils.cache import get_cache_key, is_single_parent_filter
 from app.utils.mappers.cache_to_model import block_cache_to_models
 from app.utils.mappers.orm_to_models import block_orm_to_model
 
@@ -26,135 +27,98 @@ if TYPE_CHECKING:
 
 
 class BlockService:
-    def __init__(
-        self,
-        repo: "BlockRepository",
-        redis: "Redis",
-    ):
+    def __init__(self, repo: "BlockRepository", redis: "Redis"):
         self.repo = repo
         self.redis = redis
-        self.ttl = 60
 
     @service_handler
     async def get_all(self) -> list["BlockRead"]:
-        cache_key = "blocks:all"
-        cached = await self.redis.get(cache_key)
-        if cached:
-            logger.info("Hit cache for key: %r", cache_key)
-            return await block_cache_to_models(cached)
-
         db_blocks = await self.repo.get_all()
         if not db_blocks:
             logger.warning("Blocks not found in DB")
             return []
 
-        validated_blocks = [
-            await block_orm_to_model(db_block) for db_block in db_blocks
-        ]
-
-        await self.redis.set(
-            cache_key,
-            json.dumps([u.model_dump(mode="json") for u in validated_blocks]),
-            ex=self.ttl,
-        )
-
+        validated_blocks = [block_orm_to_model(db_block) for db_block in db_blocks]
         return validated_blocks
 
     @service_handler
     async def get_by_filters(
-        self,
-        current_user: "User",
-        filters: "BlockFilters",
+        self, current_user: "User", filters: "BlockFilters"
     ) -> list["BlockRead"]:
-        filters_dict = filters.model_dump(
-            exclude_none=True,
-            exclude_unset=True,
-        )
+        filters_dict = filters.model_dump(exclude_none=True, exclude_unset=True)
 
-        if not filters_dict:
-            cache_key = await key_builder(
-                func=self.get_by_filters,
-                namespace=f"blocks:user:{current_user.id}:all",
-                args=(),
-                kwargs={},
+        if is_single_parent_filter(filters_dict, "roadmap_id"):
+            key = get_cache_key(
+                "blocks",
+                settings.cache.version,
+                "user",
+                str(current_user.id),
+                "roadmap",
+                str(filters_dict["roadmap_id"]),
+                "list",
             )
-            cached = await self.redis.get(cache_key)
+            cached = await self.redis.get(key)
             if cached:
-                logger.info("Hit cache for key: %r", cache_key)
-                return await block_cache_to_models(cached)
+                return block_cache_to_models(cached)
 
-        accessed_filters = await get_accessed_filters(
-            current_user,
-            filters_dict,
-        )
-
+        accessed_filters = get_accessed_filters(current_user, filters_dict)
         db_blocks = await self.repo.get_by_filters(accessed_filters)
         if not db_blocks:
             logger.warning("Blocks with filters(%r) not found", filters)
             return []
 
-        validated_blocks = [
-            await block_orm_to_model(db_block) for db_block in db_blocks
-        ]
+        validated_blocks = [block_orm_to_model(db_block) for db_block in db_blocks]
 
-        if not filters_dict:
+        if is_single_parent_filter(filters_dict, "roadmap_id"):
             cache_data = json.dumps(
                 [u.model_dump(mode="json") for u in validated_blocks], default=str
             )
-            await self.redis.set(
-                cache_key,
-                cache_data,
-                ex=self.ttl,
-            )
-            logger.info("Cache SET: %r", cache_key)
+            await self.redis.set(key, cache_data, ex=settings.cache.block_list_ttl)
 
         return validated_blocks
 
     @service_handler
     async def get_by_id(
-        self,
-        current_user: "User",
-        block_id: "BaseIdType",
+        self, current_user: "User", block_id: "BaseIdType"
     ) -> "BlockRead":
-        cache_key = await key_builder(
-            func=self.get_by_id,
-            namespace=f"block:{block_id}:user:{current_user.id}",
-            args=(),
-            kwargs={},
+        key = get_cache_key(
+            "blocks",
+            settings.cache.version,
+            "user",
+            str(current_user.id),
+            "block",
+            str(block_id),
+            "detail",
         )
-        cached = await self.redis.get(cache_key)
+        cached = await self.redis.get(key)
         if cached:
-            logger.info("Hit cache for key: %r", cache_key)
-            result_roadmap = await block_cache_to_models(cached)
-            return result_roadmap[0]
+            cached_block = block_cache_to_models(cached)
+            return cached_block[0]
 
         db_block = await self.repo.get_by_id(block_id)
         if not db_block:
-            logger.warning("Block(%r) not found", block_id)
+            logger.error("Block(%r) not found", block_id)
             raise ValueError("NOT_FOUND")
 
-        validated_block = await block_orm_to_model(db_block)
-        await user_can_read_entity(
+        validated_block = block_orm_to_model(db_block)
+        user_can_read_entity(
             current_user,
             validated_block.model_dump(),
         )
 
         await self.redis.set(
-            cache_key,
+            key,
             json.dumps([validated_block.model_dump(mode="json")]),
-            ex=self.ttl,
+            ex=settings.cache.block_detail_ttl,
         )
-
         return validated_block
 
     @service_handler
     async def create(
-        self,
-        current_user: "User",
-        block_create_data: "BlockCreate",
+        self, current_user: "User", block_create_data: "BlockCreate"
     ) -> "BlockRead":
-        block_dict = block_create_data.model_dump()
-        block_dict["id"] = await generate_base_id()
+        block_dict = block_create_data.model_dump(exclude_none=True, exclude_unset=True)
+        block_dict["id"] = generate_base_id()
         block_dict["user_id"] = current_user.id
 
         created_block = await self.repo.create(block_dict)
@@ -166,39 +130,60 @@ class BlockService:
             )
             raise ValueError("OPERATION_FAILED")
 
-        validated_created_block = await block_orm_to_model(created_block)
+        validated_created_block = block_orm_to_model(created_block)
 
-        user_filter_keys = await self.redis.keys(f"roadmaps:user:{current_user.id}:*")
-        all_key = await self.redis.keys(f"blocks:all")
-        summary_keys = user_filter_keys + all_key
-        if summary_keys:
-            await self.redis.delete(*summary_keys)
+        await self.redis.delete(
+            get_cache_key(
+                "blocks",
+                settings.cache.version,
+                "user",
+                str(current_user.id),
+                "roadmap",
+                str(block_dict["roadmap_id"]),
+                "list",
+            ),
+            get_cache_key(
+                "blocks",
+                settings.cache.version,
+                "user",
+                str(current_user.id),
+                "block",
+                str(block_dict["id"]),
+                "detail",
+            ),
+        )
 
         return validated_created_block
 
     @service_handler
-    async def delete(
-        self,
-        current_user: "User",
-        block_id: "BaseIdType",
-    ) -> None:
-        await self.get_by_id(current_user, block_id)
+    async def delete(self, current_user: "User", block_id: "BaseIdType") -> None:
+        existed_block = await self.get_by_id(current_user, block_id)
 
         success = await self.repo.delete(block_id)
-        if success:
-            logger.info("Block deleted successfully: %r", block_id)
-        else:
+        if not success:
             logger.error("Deletion for Block(%r) FAILED", block_id)
             raise ValueError("OPERATION_FAILED")
 
-        user_filter_keys = await self.redis.keys(f"blocks:user:{current_user.id}:*")
-        detail_keys = await self.redis.keys(
-            f"block:{block_id}:user:{current_user.id}:*"
+        await self.redis.delete(
+            get_cache_key(
+                "blocks",
+                settings.cache.version,
+                "user",
+                str(current_user.id),
+                "roadmap",
+                str(existed_block.roadmap_id),
+                "list",
+            ),
+            get_cache_key(
+                "blocks",
+                settings.cache.version,
+                "user",
+                str(current_user.id),
+                "block",
+                str(block_id),
+                "detail",
+            ),
         )
-        all_key = await self.redis.keys("blocks:all")
-        summary_keys = user_filter_keys + all_key + detail_keys
-        if summary_keys:
-            await self.redis.delete(*summary_keys)
 
     @service_handler
     async def update(
@@ -209,22 +194,33 @@ class BlockService:
     ) -> "BlockRead":
         await self.get_by_id(current_user, block_id)
 
-        block_dict = block_update_data.model_dump(exclude_unset=True)
-
+        block_dict = block_update_data.model_dump(exclude_none=True, exclude_unset=True)
         updated_block = await self.repo.update(block_id, block_dict)
         if not updated_block:
             logger.error("Failed to update Block(id=%r)", block_id)
             raise ValueError("OPERATION_FAILED")
 
-        validated_updated_user = await block_orm_to_model(updated_block)
+        validated_updated_block = block_orm_to_model(updated_block)
 
-        user_filter_keys = await self.redis.keys(f"blocks:user:{current_user.id}:*")
-        detail_keys = await self.redis.keys(
-            f"block:{block_id}:user:{current_user.id}:*"
+        await self.redis.delete(
+            get_cache_key(
+                "blocks",
+                settings.cache.version,
+                "user",
+                str(current_user.id),
+                "roadmap",
+                str(validated_updated_block.roadmap_id),
+                "list",
+            ),
+            get_cache_key(
+                "blocks",
+                settings.cache.version,
+                "user",
+                str(current_user.id),
+                "block",
+                str(block_id),
+                "detail",
+            ),
         )
-        all_key = await self.redis.keys("blocks:all")
-        summary_keys = user_filter_keys + all_key + detail_keys
-        if summary_keys:
-            await self.redis.delete(*summary_keys)
 
-        return validated_updated_user
+        return validated_updated_block

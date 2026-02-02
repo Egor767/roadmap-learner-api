@@ -12,7 +12,7 @@ class BaseBlock(BaseModel):
 
 
 class BlockCreate(BaseBlock):
-    order_index: int
+    order_index: float
     roadmap_id: BaseIdType
 
 
@@ -26,7 +26,7 @@ class BlockUpdate(BaseModel):
     title: str | None = None
     description: str | None = None
     status: BlockStatus | None = None
-    order_index: int | None = None
+    order_index: float | None = None
     roadmap_id: BaseIdType | None = None
 
 
@@ -34,7 +34,7 @@ class BlockRead(BaseBlock):
     id: BaseIdType
     roadmap_id: BaseIdType
     user_id: BaseIdType
-    order_index: int
+    order_index: float
     status: BlockStatus
     created_at: datetime
     updated_at: datetime
@@ -48,4 +48,4 @@ class BlockFilters(BaseModel):
     title: str | None = None
     description: str | None = None
     status: BlockStatus | None = None
-    order_index: int | None = None
+    order_index: float | None = None

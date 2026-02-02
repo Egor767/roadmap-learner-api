@@ -29,7 +29,6 @@ class CardUpdate(BaseModel):
     example: str | None = None
     comment: str | None = None
     status: CardStatus | None = None
-    block_id: BaseIdType | None = None
 
 
 class CardRead(BaseCard):

@@ -117,7 +117,7 @@ async def get_next_card_id(
 
 # -------------------------------------- CREATE --------------------------------------
 @router.post(
-    "/",
+    "",
     name="sessions:create_session",
     response_model=SessionRead,
 )

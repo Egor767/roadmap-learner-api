@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String, Integer, Enum as SQLEnum
+from sqlalchemy import String, Enum as SQLEnum, Float
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .base import Base
@@ -26,7 +26,7 @@ class Block(IdMixin, TimestampMixin, RoadmapRelationMixin, UserRelationMixin, Ba
         String(100),
         nullable=True,
     )
-    order_index: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    order_index: Mapped[float] = mapped_column(Float, nullable=False, default=0)
     status: Mapped[str] = mapped_column(
         SQLEnum(
             "draft",

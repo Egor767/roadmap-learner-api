@@ -1,29 +1,20 @@
-import hashlib
 import json
 import logging
 from functools import wraps
-from typing import Callable, Any, Tuple, Dict, Optional
+from typing import Callable, Any, Optional
+
+from app.core.config import settings
 
 logger = logging.getLogger("CACHE-LOGGER")
 
 
-async def key_builder(
-    func: Callable[..., Any],
-    namespace: str,
-    args: Tuple[Any, ...],
-    kwargs: Dict[str, Any],
-    exclude_types: tuple = (),
-) -> str:
-    cache_kw = {}
-    for name, value in kwargs.items():
-        if isinstance(value, exclude_types):
-            continue
-        cache_kw[name] = value
+def get_cache_key(*args: str) -> str:
+    cfg = settings.cache
+    return ":".join((cfg.prefix, cfg.version, *args))
 
-    cache_key = hashlib.md5(
-        f"{func.__module__}:{func.__name__}:{args}:{cache_kw}".encode()
-    ).hexdigest()
-    return f"{namespace}:{cache_key}"
+
+def is_single_parent_filter(filters: dict, parent: str) -> bool:
+    return set(filters.keys()) == {parent}
 
 
 def cached(
