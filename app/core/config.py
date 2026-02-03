@@ -28,6 +28,38 @@ class DBConfig(BaseModel):
         return f"{self.url_prefix}://{self.username}:{self.password}@{self.host}:{self.port}/{self.name}"
 
 
+class RedisDB(BaseModel):
+    cache: int = 0
+    queue: int = 1
+
+
+class RedisConfig(BaseModel):
+    host: str = "localhost"
+    port: int = 6379
+    db: RedisDB = RedisDB()
+    url_prefix: str = "redis"
+
+    @property
+    def url(self) -> str:
+        return f"{self.url_prefix}://{self.host}:{self.port}/{self.db.cache}"
+
+
+class CacheConfig(BaseModel):
+    prefix: str = "cache"
+    version: str = "v1"
+
+    default_ttl: int = 60
+
+    roadmap_list_ttl: int = 60
+    roadmap_detail_ttl: int = 60
+
+    block_list_ttl: int = 60
+    block_detail_ttl: int = 60
+
+    card_list_ttl: int = 60
+    card_detail_ttl: int = 60
+
+
 class RunConfig(BaseModel):
     host: str = "127.0.0.1"
     port: int = 8080
@@ -57,9 +89,10 @@ class ApiPrefix(BaseModel):
 
 
 class AccessToken(BaseModel):
-    lifetime_seconds: int = 36000
+    lifetime_seconds: int = 60
     reset_password_token_secret: str
     verification_token_secret: str
+    max_active_tokens: int = 3
 
 
 class Settings(BaseSettings):
@@ -76,6 +109,12 @@ class Settings(BaseSettings):
     run: RunConfig = RunConfig()
     api: ApiPrefix = ApiPrefix()
     access_token: AccessToken
+    redis: RedisConfig = RedisConfig()
+    cache: CacheConfig = CacheConfig()
 
 
 settings = Settings()
+
+
+if __name__ == "__main__":
+    print(settings.db.url)

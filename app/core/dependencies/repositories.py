@@ -3,11 +3,11 @@ from typing import Annotated, TYPE_CHECKING
 from fastapi import Depends
 
 from app.repositories import (
+    UserRepository,
+    RoadmapRepository,
     BlockRepository,
     CardRepository,
-    RoadmapRepository,
-    SessionManagerRepository,
-    UserRepository,
+    SessionRepository,
 )
 from .db import get_db_session
 
@@ -51,10 +51,10 @@ async def get_card_repository(
     yield CardRepository(session)
 
 
-async def get_session_manager_repository(
+async def get_session_repository(
     session: Annotated[
         "AsyncSession",
         Depends(get_db_session),
     ],
-) -> SessionManagerRepository:
-    yield SessionManagerRepository(session)
+) -> SessionRepository:
+    yield SessionRepository(session)

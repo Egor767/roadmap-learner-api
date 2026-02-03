@@ -3,12 +3,12 @@ import contextlib
 import logging
 from os import getenv
 
-from core.dependencies import get_users_db
-from core.dependencies.users import get_user_manager
+from app.core.dependencies import get_users_db
+from app.core.dependencies.users import get_user_manager
 from fastapi_users.exceptions import UserAlreadyExists
-from models import User, db_helper
-from schemas.user import UserCreate
-from services import UserManager
+from app.models import User, db_helper
+from app.schemas.user import UserCreate
+from app.services import UserManager
 
 logger = logging.getLogger("Actions-Logger")
 get_users_db_context = contextlib.asynccontextmanager(get_users_db)
@@ -17,6 +17,7 @@ get_user_manager_context = contextlib.asynccontextmanager(get_user_manager)
 
 default_email = getenv("DEFAULT_EMAIL", "admin@admin.com")
 default_password = getenv("DEFAULT_PASSWORD", "abc")
+
 default_is_active = True
 default_is_superuser = True
 default_is_verified = True

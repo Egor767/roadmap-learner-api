@@ -12,7 +12,7 @@ from app.repositories import BaseRepository
 from app.models import Roadmap
 
 if TYPE_CHECKING:
-    from app.core.types import BaseIdType
+    from app.core.custom_types import BaseIdType
 
 
 class RoadmapRepository(BaseRepository):
@@ -36,13 +36,11 @@ class RoadmapRepository(BaseRepository):
         filters: dict,
     ) -> list[Roadmap]:
         stmt = select(Roadmap)
-
         for field_name, value in filters.items():
             if value is not None:
                 column = getattr(Roadmap, field_name, None)
                 if column is not None:
                     stmt = stmt.where(column == value)
-
         result = await self.session.execute(stmt)
         roadmaps = list(result.scalars().all())
         return roadmaps

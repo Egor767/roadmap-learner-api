@@ -2,10 +2,15 @@ from sqlalchemy import String, Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .base import Base
-from .mixins import BlockRelationMixin, TimestampMixin, IdMixin
+from .mixins import (
+    BlockRelationMixin,
+    TimestampMixin,
+    IdMixin,
+    UserRelationMixin,
+)
 
 
-class Card(IdMixin, TimestampMixin, BlockRelationMixin, Base):
+class Card(IdMixin, TimestampMixin, BlockRelationMixin, UserRelationMixin, Base):
     # _block_back_populates = "cards"
 
     term: Mapped[str] = mapped_column(

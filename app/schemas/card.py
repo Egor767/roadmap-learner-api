@@ -3,7 +3,7 @@ from enum import Enum
 
 from pydantic import BaseModel, ConfigDict
 
-from app.core.types import BaseIdType
+from app.core.custom_types import BaseIdType
 
 
 class BaseCard(BaseModel):
@@ -29,12 +29,12 @@ class CardUpdate(BaseModel):
     example: str | None = None
     comment: str | None = None
     status: CardStatus | None = None
-    block_id: BaseIdType | None = None
 
 
 class CardRead(BaseCard):
     id: BaseIdType
     block_id: BaseIdType
+    user_id: BaseIdType
     example: str | None = None
     comment: str | None = None
     status: CardStatus
@@ -45,6 +45,7 @@ class CardRead(BaseCard):
 
 
 class CardFilters(BaseModel):
+    user_id: BaseIdType | None = None
     block_id: BaseIdType | None = None
     term: str | None = None
     definition: str | None = None

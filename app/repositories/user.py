@@ -7,7 +7,7 @@ from app.models import User
 from app.repositories import BaseRepository
 
 if TYPE_CHECKING:
-    from app.core.types import BaseIdType
+    from app.core.custom_types import BaseIdType
 
 
 class UserRepository(BaseRepository):

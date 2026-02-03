@@ -3,12 +3,14 @@ from enum import Enum
 
 from pydantic import BaseModel, ConfigDict
 
-from app.core.types import BaseIdType
+from app.core.custom_types import BaseIdType
 
 
 class BaseRoadmap(BaseModel):
     title: str
     description: str | None = None
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class RoadmapCreate(BaseRoadmap):
@@ -38,7 +40,7 @@ class RoadmapRead(BaseRoadmap):
 
 
 class RoadmapFilters(BaseModel):
-    user_id: BaseIdType | None = None  # ХЗ ХЗ ХЗ
+    user_id: BaseIdType | None = None
     title: str | None = None
     description: str | None = None
     status: RoadmapStatus | None = None

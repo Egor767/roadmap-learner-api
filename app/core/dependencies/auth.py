@@ -3,10 +3,10 @@ from typing import Annotated, TYPE_CHECKING
 from fastapi import Depends
 from fastapi_users.authentication import AuthenticationBackend
 from fastapi_users.authentication.strategy import DatabaseStrategy
-from fastapi_users_db_sqlalchemy.access_token import SQLAlchemyAccessTokenDatabase
 
 from app.core.authentication.transport import bearer_transport
 from app.core.config import settings
+from app.models.access_token import SQLAlchemyAccessTokenDatabase
 from app.models import AccessToken
 from .db import get_db_session
 

@@ -7,7 +7,7 @@ from app.core.authentication.fastapi_users import current_active_user
 from app.core.config import settings
 from app.core.dependencies.services import get_card_service
 from app.core.handlers import router_handler
-from app.core.types import BaseIdType
+from app.core.custom_types import BaseIdType
 from app.schemas.card import (
     CardRead,
     CardCreate,
@@ -93,7 +93,7 @@ async def get_card(
 
 # -------------------------------------- CREATE --------------------------------------
 @router.post(
-    "/",
+    "",
     name="cards:create_card",
     response_model=CardRead,
 )

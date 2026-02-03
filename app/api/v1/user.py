@@ -28,7 +28,7 @@ async def get_users(
         "UserService",
         Depends(get_user_service),
     ],
-):
+) -> list[UserRead]:
     return await user_service.get_all()
 
 

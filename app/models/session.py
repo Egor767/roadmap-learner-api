@@ -1,14 +1,17 @@
-from sqlalchemy import Column, DateTime, Integer, Enum as SQLEnum
-from sqlalchemy.dialects.postgresql import JSONB
+from datetime import datetime
+
+from sqlalchemy import DateTime, Enum as SQLEnum, ARRAY, UUID
+from sqlalchemy.orm import Mapped, mapped_column
 
 from .base import Base
 from .mixins import (
     TimestampMixin,
     UserRelationMixin,
     RoadmapRelationMixin,
-    BlockRelationMixin,
     IdMixin,
 )
+
+from app.core.custom_types import BaseIdType
 
 
 class Session(
@@ -16,7 +19,6 @@ class Session(
     TimestampMixin,
     UserRelationMixin,
     RoadmapRelationMixin,
-    BlockRelationMixin,
     Base,
 ):
     # _user_back_populates = "sessions"
@@ -24,7 +26,7 @@ class Session(
     # _block_back_populates = None
     # _block_id_nullable = True
 
-    mode = Column(
+    mode: Mapped[str] = mapped_column(
         SQLEnum(
             "review",
             "exam",
@@ -33,7 +35,12 @@ class Session(
         nullable=False,
     )
 
-    status = Column(
+    block_id: Mapped[BaseIdType] = mapped_column(
+        UUID,
+        nullable=True,
+    )
+
+    status: Mapped[str] = mapped_column(
         SQLEnum(
             "active",
             "completed",
@@ -42,14 +49,33 @@ class Session(
         ),
         default="active",
     )
-    card_queue = Column(JSONB, nullable=True, default=list)
-    current_card_index = Column(Integer, default=0)
 
-    correct_answers = Column(Integer, default=0)
-    incorrect_answers = Column(Integer, default=0)
-    review_answers = Column(Integer, default=0)
+    card_ids_queue: Mapped[list[BaseIdType] | None] = mapped_column(
+        ARRAY(UUID(as_uuid=True)),
+        nullable=True,
+        default=list,
+    )
 
-    completed_at = Column(DateTime(timezone=True), nullable=True)
+    current_card_index: Mapped[int] = mapped_column(
+        default=0,
+    )
+
+    correct_answers: Mapped[int] = mapped_column(
+        default=0,
+    )
+
+    incorrect_answers: Mapped[int] = mapped_column(
+        default=0,
+    )
+
+    review_answers: Mapped[int] = mapped_column(
+        default=0,
+    )
+
+    completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
 
     def __str__(self):
         return (

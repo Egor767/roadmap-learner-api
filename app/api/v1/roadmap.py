@@ -7,7 +7,7 @@ from app.core.authentication.fastapi_users import current_active_user
 from app.core.config import settings
 from app.core.dependencies.services import get_roadmap_service
 from app.core.handlers import router_handler
-from app.core.types import BaseIdType
+from app.core.custom_types import BaseIdType
 from app.schemas.roadmap import (
     RoadmapRead,
     RoadmapCreate,
@@ -93,7 +93,7 @@ async def get_roadmap(
 
 # -------------------------------------- CREATE --------------------------------------
 @router.post(
-    "/",
+    "",
     name="roadmaps:create_roadmap",
     response_model=RoadmapRead,
 )
@@ -142,7 +142,7 @@ async def delete_roadmap(
 # -------------------------------------- UPDATE --------------------------------------
 @router.patch(
     "/{roadmap_id}",
-    name="roadmaps:path_roadmap",
+    name="roadmaps:patch_roadmap",
     response_model=RoadmapRead,
 )
 @router_handler
