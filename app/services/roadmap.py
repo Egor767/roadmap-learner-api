@@ -105,6 +105,8 @@ class RoadmapService:
             "roadmaps",
             "user",
             str(current_user.id),
+            "roadmap",
+            str(roadmap_id),
             "detail",
         )
         cached = await self.redis.get(key)
@@ -168,7 +170,7 @@ class RoadmapService:
         current_user: "User",
         roadmap_id: "BaseIdType",
     ) -> None:
-        existed_card = await self.get_by_id(current_user, roadmap_id)
+        existed_roadmap = await self.get_by_id(current_user, roadmap_id)
 
         success = await self.repo.delete(roadmap_id)
         if not success:
@@ -176,8 +178,20 @@ class RoadmapService:
             raise ValueError("OPERATION_FAILED")
 
         await self.redis.delete(
-            get_cache_key("roadmaps", "user", str(current_user.id), "list"),
-            get_cache_key("roadmaps", "user", str(current_user.id), "detail"),
+            get_cache_key(
+                "roadmaps",
+                "user",
+                str(current_user.id),
+                "list",
+            ),
+            get_cache_key(
+                "roadmaps",
+                "user",
+                str(current_user.id),
+                "roadmap",
+                str(existed_roadmap.id),
+                "detail",
+            ),
         )
 
     @service_handler
@@ -202,8 +216,20 @@ class RoadmapService:
         validated_updated_roadmap = roadmap_orm_to_model(updated_roadmap)
 
         await self.redis.delete(
-            get_cache_key("roadmaps", "user", str(current_user.id), "list"),
-            get_cache_key("roadmaps", "user", str(current_user.id), "detail"),
+            get_cache_key(
+                "roadmaps",
+                "user",
+                str(current_user.id),
+                "list",
+            ),
+            get_cache_key(
+                "roadmaps",
+                "user",
+                str(current_user.id),
+                "roadmap",
+                str(updated_roadmap.id),
+                "detail",
+            ),
         )
 
         return validated_updated_roadmap

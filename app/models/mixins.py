@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 class IdMixin:
     id: Mapped[BaseIdType] = mapped_column(
         primary_key=True,
-        default=id_generator(),
+        default=id_generator,
         server_default=text(server_id_generator()),
     )
 
